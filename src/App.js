@@ -280,7 +280,7 @@ function Paketler({ onPaketSec }) {
             {(pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url) ? (
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <img src={pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url} alt={pkg.name}
-                  style={{ width: '100%', height: 220, objectFit: 'contain', objectPosition: 'center', display: 'block', background: '#0d0800' }} />
+                  style={{ width: '100%', height: 220, objectFit: 'contain', objectPosition: 'center', display: 'block', background: pkg.featured ? GOLD : DARK }} />
                 {pkg.featured && (
                   <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', background: DARK, border: `1px solid ${GOLD}`, padding: '4px 20px', fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: 3, color: GOLD, whiteSpace: 'nowrap' }}>
                     EN POPÜLER
