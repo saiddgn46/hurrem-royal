@@ -100,24 +100,30 @@ function Navbar({ active, setActive }) {
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function Hero({ onRezervasyon, slogan, gorsel }) {
   return (
-    <section style={{ position: 'relative', height: '100vh', minHeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: DARK }}>
+    <section style={{ position: 'relative', height: '100svh', minHeight: 580, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: DARK }}>
       <img src={gorsel || "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1400&q=80"} alt="salon"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center', opacity: 0.6 }} />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.55) 100%)' }} />
-      <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 24px' }}>
+      <style>{`
+        @media (max-width: 480px) {
+          .hero-btn { width: auto !important; padding: 14px 32px !important; }
+          .hero-divider { margin: 16px auto !important; }
+        }
+      `}</style>
+      <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640, width: '100%' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-          <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(36px, 6vw, 72px)', fontWeight: 400, marginBottom: 8, lineHeight: 1.2 }}>
+          <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(28px, 7vw, 72px)', fontWeight: 400, marginBottom: 8, lineHeight: 1.2 }}>
             HÜRREM ROYAL
           </h1>
-          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(14px, 2vw, 20px)', color: LIGHT_GOLD, marginBottom: 8, letterSpacing: 1 }}>
+          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(13px, 3vw, 20px)', color: LIGHT_GOLD, marginBottom: 0, letterSpacing: 1 }}>
             Kahramanmaraş · Est. 2024
           </p>
-          <div style={{ width: 60, height: 1, background: GOLD, margin: '24px auto' }} />
-          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(18px, 2.5vw, 26px)', marginBottom: 40, fontStyle: 'italic', color: '#f0e8d5' }}>
+          <div className="hero-divider" style={{ width: 60, height: 1, background: GOLD, margin: '20px auto' }} />
+          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(16px, 3.5vw, 26px)', marginBottom: 32, fontStyle: 'italic', color: '#f0e8d5' }}>
             {slogan || 'En özel anınız, en güzel mekânda'}
           </p>
-          <button onClick={onRezervasyon}
-            style={{ background: GOLD, border: 'none', color: DARK, padding: '16px 40px', fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3, cursor: 'pointer', transition: 'background 0.2s' }}
+          <button className="hero-btn" onClick={onRezervasyon}
+            style={{ background: GOLD, border: 'none', color: DARK, padding: '16px 40px', fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3, cursor: 'pointer', transition: 'background 0.2s', display: 'inline-block' }}
             onMouseEnter={e => e.target.style.background = LIGHT_GOLD}
             onMouseLeave={e => e.target.style.background = GOLD}>
             REZERVASYON YAP
