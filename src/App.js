@@ -159,8 +159,10 @@ function Salon({ metin, gorsel }) {
         </button>
       </motion.div>
       <motion.div style={{ flex: '1 1 340px' }} initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
+        <style>{`.salon-gorsel { height: 480px !important; } @media(max-width:640px){.salon-gorsel{height:280px !important;}}`}</style>
         <img src={gorsel || "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=700&q=80"} alt="salon"
-          style={{ width: '100%', height: 480, objectFit: 'cover', boxShadow: `8px 8px 0 ${GOLD}44` }} />
+          className="salon-gorsel"
+          style={{ width: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block', boxShadow: `8px 8px 0 ${GOLD}44` }} />
       </motion.div>
     </section>
   );
@@ -188,9 +190,9 @@ function PaketDetayModal({ pkg, onKapat, onSec }) {
           style={{ position: 'absolute', top: 14, right: 18, background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', zIndex: 10, lineHeight: 1 }}>×</button>
 
         {images.length > 0 && (
-          <div style={{ flex: '1 1 300px', minHeight: 300, position: 'relative' }}>
+          <div style={{ flex: '1 1 300px', minHeight: 320, position: 'relative', overflow: 'hidden' }}>
             <img src={images[aktifGorsel]} alt={pkg.name}
-              style={{ width: '100%', height: '100%', minHeight: 300, objectFit: 'cover', display: 'block' }} />
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
             {images.length > 1 && (
               <>
                 <button onClick={() => setAktifGorsel(i => (i - 1 + images.length) % images.length)}
@@ -281,8 +283,9 @@ function Paketler({ onPaketSec }) {
               </div>
             )}
             {(pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url) && (
-              <div style={{ margin: '0 -32px 24px', marginTop: -40 }}>
-                <img src={pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url} alt={pkg.name} style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+              <div style={{ margin: '0 -32px 28px', marginTop: -40, overflow: 'hidden', lineHeight: 0 }}>
+                <img src={pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url} alt={pkg.name}
+                  style={{ width: '100%', height: 240, objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
               </div>
             )}
             <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 22, color: pkg.featured ? DARK : '#fff', marginBottom: 8 }}>{pkg.name}</h3>
