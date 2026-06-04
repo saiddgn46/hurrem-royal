@@ -29,6 +29,8 @@ export default function Admin() {
   const [duzenForm, setDuzenForm] = useState(null);
   const [ayarKaydedildi, setAyarKaydedildi] = useState(false);
   const dosyaRef = useRef();
+  const heroGorselRef = useRef();
+  const salonGorselRef = useRef();
 
   const ADMIN_SIFRE = process.env.REACT_APP_ADMIN_SIFRE;
 
@@ -140,6 +142,21 @@ export default function Admin() {
   const ozellikEkle = () => setDuzenForm(f => ({ ...f, features: [...f.features, ''] }));
   const ozellikSil = (i) => setDuzenForm(f => ({ ...f, features: f.features.filter((_, idx) => idx !== i) }));
   const ozellikDegistir = (i, val) => setDuzenForm(f => ({ ...f, features: f.features.map((feat, idx) => idx === i ? val : feat) }));
+
+  // ── Görsel yükleme ──
+  const gorselYukle = async (anahtar, file) => {
+    if (!file) return;
+    setYukleniyor(true);
+    const uzanti = file.name.split('.').pop();
+    const dosyaAdi = `${anahtar}-${Date.now()}.${uzanti}`;
+    const { error } = await supabase.storage.from('galeri').upload(dosyaAdi, file);
+    if (!error) {
+      const { data: urlData } = supabase.storage.from('galeri').getPublicUrl(dosyaAdi);
+      await supabase.from('site_ayarlari').upsert({ anahtar, deger: urlData.publicUrl });
+      ayarDegistir(anahtar, urlData.publicUrl);
+    }
+    setYukleniyor(false);
+  };
 
   // ── Ayar işlemleri ──
   const ayarDegistir = (key, val) => setAyarForm(f => ({ ...f, [key]: val }));
@@ -450,26 +467,56 @@ export default function Admin() {
               <div style={{ background: DARK, padding: '14px 24px' }}>
                 <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 12, letterSpacing: 3 }}>ANA SAYFA — HERO BÖLÜMÜ</span>
               </div>
-              <div style={{ padding: 24 }}>
-                <label style={labelStyle}>SLOGAN</label>
-                <input value={ayarForm.hero_slogan || ''} onChange={e => ayarDegistir('hero_slogan', e.target.value)} style={fieldStyle} placeholder="En özel anınız, en güzel mekânda" />
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>SLOGAN</label>
+                  <input value={ayarForm.hero_slogan || ''} onChange={e => ayarDegistir('hero_slogan', e.target.value)} style={fieldStyle} placeholder="En özel anınız, en güzel mekânda" />
+                </div>
+                <div>
+                  <label style={labelStyle}>ARKA PLAN GÖRSELİ</label>
+                  <input ref={heroGorselRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => gorselYukle('hero_gorsel', e.target.files[0])} />
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button onClick={() => heroGorselRef.current.click()} disabled={yukleniyor}
+                      style={{ background: yukleniyor ? '#ccc' : GOLD, border: 'none', color: DARK, padding: '10px 24px', cursor: yukleniyor ? 'wait' : 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2 }}>
+                      {yukleniyor ? 'YÜKLENİYOR...' : 'GÖRSEL YÜKLE'}
+                    </button>
+                    {ayarForm.hero_gorsel && (
+                      <img src={ayarForm.hero_gorsel} alt="hero" style={{ height: 60, width: 120, objectFit: 'cover', border: `1px solid ${GOLD}44`, borderRadius: 4 }} />
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Salon */}
             <div style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, overflow: 'hidden' }}>
               <div style={{ background: DARK, padding: '14px 24px' }}>
-                <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 12, letterSpacing: 3 }}>SALON — HAKKIMIZDA METNİ</span>
+                <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 12, letterSpacing: 3 }}>SALON — HAKKIMIZDA BÖLÜMÜ</span>
               </div>
-              <div style={{ padding: 24 }}>
-                <label style={labelStyle}>METİN</label>
-                <textarea
-                  value={ayarForm.salon_metin || ''}
-                  onChange={e => ayarDegistir('salon_metin', e.target.value)}
-                  rows={4}
-                  style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.7 }}
-                  placeholder="Kahramanmaraş'ın kalbinde..."
-                />
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>METİN</label>
+                  <textarea
+                    value={ayarForm.salon_metin || ''}
+                    onChange={e => ayarDegistir('salon_metin', e.target.value)}
+                    rows={4}
+                    style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.7 }}
+                    placeholder="Kahramanmaraş'ın kalbinde..."
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>BÖLÜM GÖRSELİ</label>
+                  <input ref={salonGorselRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => gorselYukle('salon_gorsel', e.target.files[0])} />
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button onClick={() => salonGorselRef.current.click()} disabled={yukleniyor}
+                      style={{ background: yukleniyor ? '#ccc' : GOLD, border: 'none', color: DARK, padding: '10px 24px', cursor: yukleniyor ? 'wait' : 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2 }}>
+                      {yukleniyor ? 'YÜKLENİYOR...' : 'GÖRSEL YÜKLE'}
+                    </button>
+                    {ayarForm.salon_gorsel && (
+                      <img src={ayarForm.salon_gorsel} alt="salon" style={{ height: 60, width: 120, objectFit: 'cover', border: `1px solid ${GOLD}44`, borderRadius: 4 }} />
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 

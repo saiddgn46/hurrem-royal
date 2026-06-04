@@ -98,10 +98,10 @@ function Navbar({ active, setActive }) {
 }
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
-function Hero({ onRezervasyon, slogan }) {
+function Hero({ onRezervasyon, slogan, gorsel }) {
   return (
     <section style={{ position: 'relative', height: '100vh', minHeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: DARK }}>
-      <img src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1400&q=80" alt="salon"
+      <img src={gorsel || "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1400&q=80"} alt="salon"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.55) 100%)' }} />
       <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 24px' }}>
@@ -129,7 +129,7 @@ function Hero({ onRezervasyon, slogan }) {
 }
 
 // ─── Salon ────────────────────────────────────────────────────────────────────
-function Salon({ metin }) {
+function Salon({ metin, gorsel }) {
   return (
     <section id="salon" style={{ padding: '80px 20px', background: CREAM, display: 'flex', gap: 40, alignItems: 'center', flexWrap: 'wrap', maxWidth: 1100, margin: '0 auto' }}>
       <motion.div style={{ flex: '1 1 340px' }} initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
@@ -149,7 +149,7 @@ function Salon({ metin }) {
         </button>
       </motion.div>
       <motion.div style={{ flex: '1 1 340px' }} initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
-        <img src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=700&q=80" alt="salon"
+        <img src={gorsel || "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=700&q=80"} alt="salon"
           style={{ width: '100%', height: 480, objectFit: 'cover', boxShadow: `8px 8px 0 ${GOLD}44` }} />
       </motion.div>
     </section>
@@ -438,8 +438,8 @@ function AnaSayfa() {
     <div style={{ fontFamily: "'Cormorant Garamond', serif", background: CREAM }}>
       <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&display=swap" rel="stylesheet" />
       <Navbar active={active} setActive={setActive} />
-      <Hero onRezervasyon={() => scrollToSection('iletisim')} slogan={ayarlar.hero_slogan} />
-      <Salon metin={ayarlar.salon_metin} />
+      <Hero onRezervasyon={() => scrollToSection('iletisim')} slogan={ayarlar.hero_slogan} gorsel={ayarlar.hero_gorsel} />
+      <Salon metin={ayarlar.salon_metin} gorsel={ayarlar.salon_gorsel} />
       <Paketler onPaketSec={handlePaketSec} />
       <Galeri />
       <Iletisim seciliPaket={seciliPaket} ayarlar={ayarlar} />
