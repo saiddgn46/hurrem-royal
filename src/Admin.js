@@ -30,6 +30,7 @@ export default function Admin() {
   const [ayarKaydedildi, setAyarKaydedildi] = useState(false);
   const [aktifFiltre, setAktifFiltre] = useState('Toplam');
   const [oturumAcikBirak, setOturumAcikBirak] = useState(false);
+  const [kapatilacakTarih, setKapatilacakTarih] = useState('');
   const [paketGorselleri, setPaketGorselleri] = useState({});
   const [etkinlikler, setEtkinlikler] = useState([]);
   const [etkinlikForm, setEtkinlikForm] = useState({ baslik: '', tarih: '', aciklama: '' });
@@ -91,6 +92,22 @@ export default function Admin() {
       data.forEach(r => { map[r.anahtar] = r.deger; });
       setAyarForm(map);
     }
+  };
+
+  // ── Tarih engelleme ──
+  const tarihKapat = async () => {
+    if (!kapatilacakTarih) return;
+    const { error } = await supabase.from('rezervasyonlar').insert({
+      tarih: kapatilacakTarih, ad_soyad: '[KAPALI]',
+      telefon: '-', durum: 'Onaylandı', not: 'Admin tarafından kapatıldı',
+    });
+    if (!error) { setKapatilacakTarih(''); fetchRezervasyonlar(); }
+    else alert('Bu tarih zaten dolu veya kapalı.');
+  };
+
+  const tarihAc = async (id) => {
+    await supabase.from('rezervasyonlar').delete().eq('id', id);
+    fetchRezervasyonlar();
   };
 
   // ── Rezervasyon işlemleri ──
@@ -345,6 +362,32 @@ export default function Admin() {
         {/* ── Rezervasyonlar ── */}
         {aktifSekme === 'rezervasyonlar' && (
           <div>
+            {/* Tarih Yönetimi */}
+            <div style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, overflow: 'hidden', marginBottom: 32 }}>
+              <div style={{ background: DARK, padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 11, letterSpacing: 3 }}>TARİH YÖNETİMİ</span>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <input type="date" value={kapatilacakTarih} onChange={e => setKapatilacakTarih(e.target.value)}
+                    style={{ padding: '7px 12px', border: `1px solid ${GOLD}66`, background: '#fff', fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: DARK, outline: 'none' }} />
+                  <button onClick={tarihKapat} disabled={!kapatilacakTarih}
+                    style={{ background: kapatilacakTarih ? '#dc3545' : '#ccc', border: 'none', color: '#fff', padding: '8px 18px', cursor: kapatilacakTarih ? 'pointer' : 'default', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, borderRadius: 4 }}>
+                    KAPAT
+                  </button>
+                </div>
+              </div>
+              {rezervasyonlar.filter(r => r.ad_soyad === '[KAPALI]').length > 0 && (
+                <div style={{ padding: '12px 24px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {rezervasyonlar.filter(r => r.ad_soyad === '[KAPALI]').map(r => (
+                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8d7da', borderRadius: 20, padding: '4px 12px 4px 14px' }}>
+                      <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: '#721c24' }}>{r.tarih}</span>
+                      <button onClick={() => tarihAc(r.id)}
+                        style={{ background: 'none', border: 'none', color: '#721c24', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* İstatistik kartları */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16, marginBottom: 40 }}>
               {[
@@ -378,6 +421,7 @@ export default function Admin() {
                 </thead>
                 <tbody>
                   {rezervasyonlar.filter(r => {
+                    if (r.ad_soyad === '[KAPALI]') return false;
                     if (aktifFiltre === 'Toplam') return true;
                     if (aktifFiltre === 'Beklemede') return r.durum === 'Beklemede' || r.durum === 'Ön Rezervasyon';
                     if (aktifFiltre === 'Onaylandı') return r.durum === 'Onaylandı';

@@ -4,6 +4,7 @@ import Turnstile from 'react-turnstile';
 import { supabase } from './supabase';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import emailjs from '@emailjs/browser';
 import Admin from './Admin';
 
 const GOLD = '#C9A84C';
@@ -407,6 +408,7 @@ function RezervasyonFormu({ seciliPaket }) {
   const [gonderildi, setGonderildi] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hata, setHata] = useState('');
+  const [kvkk, setKvkk] = useState(false);
 
   useEffect(() => {
     supabase.from('paketler').select('name, capacity, price').order('sira').then(({ data }) => {
@@ -447,6 +449,18 @@ function RezervasyonFormu({ seciliPaket }) {
     if (error) {
       setHata('Bu tarih dolu. Lütfen başka bir tarih seçiniz.');
     } else {
+      const sId = process.env.REACT_APP_EMAILJS_SERVICE_ID;
+      const tId = process.env.REACT_APP_EMAILJS_TEMPLATE_ID;
+      const pKey = process.env.REACT_APP_EMAILJS_PUBLIC_KEY;
+      if (sId && tId && pKey) {
+        emailjs.send(sId, tId, {
+          musteri_adi: form.name,
+          telefon: form.phone,
+          tarih: form.date,
+          paket: form.paket || 'Belirtilmedi',
+          not: form.note || '-',
+        }, pKey).catch(() => {});
+      }
       setGonderildi(true);
     }
   };
@@ -482,13 +496,22 @@ function RezervasyonFormu({ seciliPaket }) {
         </select>
         <textarea name="note" placeholder="Notunuz (opsiyonel)" value={form.note} onChange={handleChange} rows={3} style={{ ...fs, resize: 'vertical' }} />
         <Turnstile sitekey={process.env.REACT_APP_TURNSTILE_KEY || '1x00000000000000000000AA'} onVerify={token => setTurnstileToken(token)} />
+        <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+          <input type="checkbox" checked={kvkk} onChange={e => setKvkk(e.target.checked)}
+            style={{ marginTop: 4, width: 16, height: 16, accentColor: GOLD, flexShrink: 0, cursor: 'pointer' }} />
+          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: '#5a4030', lineHeight: 1.6 }}>
+            Kişisel verilerimin rezervasyon amacıyla işlenmesine ilişkin{' '}
+            <span style={{ color: GOLD, textDecoration: 'underline', cursor: 'pointer' }}>KVKK Aydınlatma Metni</span>'ni
+            okudum, kabul ediyorum.
+          </span>
+        </label>
         {hata && (
           <div style={{ background: '#fff0f0', border: '1px solid #ffcccc', padding: '12px 16px', fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: '#c0392b', textAlign: 'center' }}>
             {hata}
           </div>
         )}
-        <button onClick={handleSubmit} disabled={loading || !form.name || !form.phone || !form.date}
-          style={{ width: '100%', padding: '16px 0', background: GOLD, border: 'none', color: DARK, fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3, cursor: loading ? 'wait' : 'pointer', opacity: (!form.name || !form.phone || !form.date) ? 0.6 : 1 }}>
+        <button onClick={handleSubmit} disabled={loading || !form.name || !form.phone || !form.date || !kvkk}
+          style={{ width: '100%', padding: '16px 0', background: GOLD, border: 'none', color: DARK, fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3, cursor: loading ? 'wait' : 'pointer', opacity: (!form.name || !form.phone || !form.date || !kvkk) ? 0.6 : 1 }}>
           {loading ? '...' : 'GÖNDER'}
         </button>
       </div>
