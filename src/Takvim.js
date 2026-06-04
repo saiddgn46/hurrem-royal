@@ -37,8 +37,6 @@ export default function Takvim({ onTarihSec }) {
     if (tarihDurumu(date) === 'dolu') return;
     setSeciliTarih(date);
 
-    const offset= date.getTimezoneOffset();
-    const localDate =new Date(date.getTime() - offset * 60 * 1000);
     if (onTarihSec) onTarihSec(date.toISOString().split('T')[0]);
   };
 
