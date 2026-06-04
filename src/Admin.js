@@ -28,6 +28,7 @@ export default function Admin() {
   const [yukleniyor, setYukleniyor] = useState(false);
   const [duzenForm, setDuzenForm] = useState(null);
   const [ayarKaydedildi, setAyarKaydedildi] = useState(false);
+  const [aktifFiltre, setAktifFiltre] = useState('Toplam');
   const dosyaRef = useRef();
   const heroGorselRef = useRef();
   const salonGorselRef = useRef();
@@ -254,7 +255,14 @@ export default function Admin() {
                 { label: 'Onaylandı', value: istatistik.onaylandi, renk: '#155724', bg: '#d4edda' },
                 { label: 'Reddedildi', value: istatistik.reddedildi, renk: '#721c24', bg: '#f8d7da' },
               ].map(({ label, value, renk, bg }) => (
-                <div key={label} style={{ background: bg, border: `1px solid ${renk}33`, borderRadius: 8, padding: '20px 24px', textAlign: 'center' }}>
+                <div key={label} onClick={() => setAktifFiltre(aktifFiltre === label ? 'Toplam' : label)}
+                  style={{
+                    background: bg, borderRadius: 8, padding: '20px 24px', textAlign: 'center',
+                    border: aktifFiltre === label ? `2px solid ${renk}` : `1px solid ${renk}33`,
+                    cursor: 'pointer', transition: 'transform 0.15s, box-shadow 0.15s',
+                    boxShadow: aktifFiltre === label ? `0 4px 16px ${renk}44` : 'none',
+                    transform: aktifFiltre === label ? 'translateY(-2px)' : 'none',
+                  }}>
                   <div style={{ fontFamily: "'Cinzel', serif", fontSize: 32, color: renk, fontWeight: 600 }}>{value}</div>
                   <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: renk, marginTop: 4 }}>{label}</div>
                 </div>
@@ -271,7 +279,13 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rezervasyonlar.map((r, i) => (
+                  {rezervasyonlar.filter(r => {
+                    if (aktifFiltre === 'Toplam') return true;
+                    if (aktifFiltre === 'Beklemede') return r.durum === 'Beklemede' || r.durum === 'Ön Rezervasyon';
+                    if (aktifFiltre === 'Onaylandı') return r.durum === 'Onaylandı';
+                    if (aktifFiltre === 'Reddedildi') return r.durum === 'Reddedildi';
+                    return true;
+                  }).map((r, i) => (
                     <tr key={r.id} style={{ borderBottom: `1px solid ${GOLD}33`, background: i % 2 === 0 ? '#fff' : '#fdf6e3' }}>
                       <td style={{ padding: '12px 16px' }}>{r.ad_soyad}</td>
                       <td style={{ padding: '12px 16px' }}>{r.telefon}</td>
