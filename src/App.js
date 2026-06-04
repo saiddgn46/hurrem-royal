@@ -63,13 +63,13 @@ function Navbar({ active, setActive }) {
       padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64,
     }}>
       <div onClick={() => handleNav('Ana Sayfa')}
-        style={{ fontFamily: "'Cinzel', serif", fontSize: 20, color: DARK, letterSpacing: 3, cursor: 'pointer', fontWeight: 600 }}>
+        style={{ fontFamily: "'Cinzel', serif", fontSize: 20, color: scrolled ? DARK : '#fff', letterSpacing: 3, cursor: 'pointer', fontWeight: 600, transition: 'color 0.3s' }}>
         HÜRREM ROYAL
       </div>
       <div style={{ display: 'flex', gap: 32 }} className="nav-desktop">
         {NAV_LINKS.map(link => (
           <button key={link} onClick={() => handleNav(link)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 2, color: active === link ? GOLD : DARK, borderBottom: active === link ? `1px solid ${GOLD}` : '1px solid transparent', paddingBottom: 2, transition: 'color 0.2s' }}>
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 2, color: active === link ? GOLD : (scrolled ? DARK : 'rgba(255,255,255,0.88)'), borderBottom: active === link ? `1px solid ${GOLD}` : '1px solid transparent', paddingBottom: 2, transition: 'color 0.2s' }}>
             {link.toUpperCase()}
           </button>
         ))}
@@ -409,6 +409,27 @@ function AnaSayfa() {
         setAyarlar(map);
       }
     });
+  }, []);
+
+  useEffect(() => {
+    const sections = [
+      { id: 'salon', link: 'Salon' },
+      { id: 'paketler', link: 'Paketler' },
+      { id: 'galeri', link: 'Galeri' },
+      { id: 'iletisim', link: 'İletişim' },
+    ];
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const s = sections.find(s => s.id === entry.target.id);
+          if (s) setActive(s.link);
+        }
+      });
+    }, { threshold: 0.4 });
+    sections.forEach(s => { const el = document.getElementById(s.id); if (el) observer.observe(el); });
+    const onScroll = () => { if (window.scrollY < 300) setActive('Ana Sayfa'); };
+    window.addEventListener('scroll', onScroll);
+    return () => { observer.disconnect(); window.removeEventListener('scroll', onScroll); };
   }, []);
 
   const handlePaketSec = (paket) => {
