@@ -168,6 +168,9 @@ function Salon({ metin, gorsel }) {
 
 // ─── Paket Detay Modal ────────────────────────────────────────────────────────
 function PaketDetayModal({ pkg, onKapat, onSec }) {
+  const [aktifGorsel, setAktifGorsel] = useState(0);
+  const images = pkg.images || [];
+
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -184,10 +187,27 @@ function PaketDetayModal({ pkg, onKapat, onSec }) {
         <button onClick={onKapat}
           style={{ position: 'absolute', top: 14, right: 18, background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', zIndex: 10, lineHeight: 1 }}>×</button>
 
-        {pkg.gorsel_url && (
-          <div style={{ flex: '1 1 300px', minHeight: 300 }}>
-            <img src={pkg.gorsel_url} alt={pkg.name}
+        {images.length > 0 && (
+          <div style={{ flex: '1 1 300px', minHeight: 300, position: 'relative' }}>
+            <img src={images[aktifGorsel]} alt={pkg.name}
               style={{ width: '100%', height: '100%', minHeight: 300, objectFit: 'cover', display: 'block' }} />
+            {images.length > 1 && (
+              <>
+                <button onClick={() => setAktifGorsel(i => (i - 1 + images.length) % images.length)}
+                  style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', fontSize: 18 }}>‹</button>
+                <button onClick={() => setAktifGorsel(i => (i + 1) % images.length)}
+                  style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: 'none', color: '#fff', width: 36, height: 36, borderRadius: '50%', cursor: 'pointer', fontSize: 18 }}>›</button>
+                <div style={{ position: 'absolute', bottom: 10, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 6 }}>
+                  {images.map((_, i) => (
+                    <button key={i} onClick={() => setAktifGorsel(i)}
+                      style={{ width: 8, height: 8, borderRadius: '50%', border: 'none', background: i === aktifGorsel ? GOLD : 'rgba(255,255,255,0.4)', cursor: 'pointer', padding: 0 }} />
+                  ))}
+                </div>
+                <div style={{ position: 'absolute', bottom: 28, right: 10, background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: 11, padding: '2px 8px', borderRadius: 10 }}>
+                  {aktifGorsel + 1}/{images.length}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -228,10 +248,21 @@ function PaketDetayModal({ pkg, onKapat, onSec }) {
 function Paketler({ onPaketSec }) {
   const [pkgList, setPkgList] = useState([]);
   const [seciliPkg, setSeciliPkg] = useState(null);
+  const [pkgGorselleri, setPkgGorselleri] = useState({});
 
   useEffect(() => {
     supabase.from('paketler').select('*').order('sira').then(({ data }) => {
       setPkgList(data && data.length > 0 ? data : PACKAGES);
+    });
+    supabase.from('paket_gorselleri').select('*').order('created_at').then(({ data }) => {
+      if (data) {
+        const map = {};
+        data.forEach(g => {
+          if (!map[g.paket_id]) map[g.paket_id] = [];
+          map[g.paket_id].push(g.url);
+        });
+        setPkgGorselleri(map);
+      }
     });
   }, []);
 
@@ -249,9 +280,9 @@ function Paketler({ onPaketSec }) {
                 EN POPÜLER
               </div>
             )}
-            {pkg.gorsel_url && (
+            {(pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url) && (
               <div style={{ margin: '0 -32px 24px', marginTop: -40 }}>
-                <img src={pkg.gorsel_url} alt={pkg.name} style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+                <img src={pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url} alt={pkg.name} style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
               </div>
             )}
             <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 22, color: pkg.featured ? DARK : '#fff', marginBottom: 8 }}>{pkg.name}</h3>
@@ -265,7 +296,7 @@ function Paketler({ onPaketSec }) {
               ))}
             </ul>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setSeciliPkg(pkg)}
+              <button onClick={() => setSeciliPkg({ ...pkg, images: pkgGorselleri[pkg.id] || (pkg.gorsel_url ? [pkg.gorsel_url] : []) })}
                 style={{ flex: 1, padding: '14px 0', background: 'none', border: `1px solid ${pkg.featured ? DARK + '99' : GOLD + '88'}`, color: pkg.featured ? DARK : GOLD, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'opacity 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}>

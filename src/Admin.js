@@ -30,11 +30,11 @@ export default function Admin() {
   const [ayarKaydedildi, setAyarKaydedildi] = useState(false);
   const [aktifFiltre, setAktifFiltre] = useState('Toplam');
   const [oturumAcikBirak, setOturumAcikBirak] = useState(false);
+  const [paketGorselleri, setPaketGorselleri] = useState({});
   const dosyaRef = useRef();
   const heroGorselRef = useRef();
   const salonGorselRef = useRef();
   const paketGorselRef = useRef();
-  const [gorselYuklenenPaket, setGorselYuklenenPaket] = useState(null);
 
   const ADMIN_SIFRE = process.env.REACT_APP_ADMIN_SIFRE;
 
@@ -60,6 +60,7 @@ export default function Admin() {
       fetchGaleri();
       fetchPaketler();
       fetchAyarlar();
+      fetchPaketGorselleri();
     }
   }, [girisYapildi]);
 
@@ -136,6 +137,18 @@ export default function Admin() {
     fetchGaleri();
   };
 
+  const fetchPaketGorselleri = async () => {
+    const { data } = await supabase.from('paket_gorselleri').select('*').order('created_at');
+    if (data) {
+      const map = {};
+      data.forEach(g => {
+        if (!map[g.paket_id]) map[g.paket_id] = [];
+        map[g.paket_id].push(g);
+      });
+      setPaketGorselleri(map);
+    }
+  };
+
   // ── Paket işlemleri ──
   const duzenlemeyiBaslat = (paket) => {
     setDuzenForm({ ...paket, features: [...paket.features] });
@@ -181,31 +194,28 @@ export default function Admin() {
     ayarDegistir(anahtar, '');
   };
 
-  const paketGorselYukle = async (paket, file) => {
-    if (!file) return;
+  const paketGorselYukle = async (paketId, files) => {
+    if (!files.length) return;
     setYukleniyor(true);
-    const uzanti = file.name.split('.').pop();
-    const dosyaAdi = `paket-${paket.id}-${Date.now()}.${uzanti}`;
-    const { error } = await supabase.storage.from('galeri').upload(dosyaAdi, file);
-    if (!error) {
-      const { data: urlData } = supabase.storage.from('galeri').getPublicUrl(dosyaAdi);
-      await supabase.from('paketler').update({ gorsel_url: urlData.publicUrl }).eq('id', paket.id);
-      setPaketler(prev => prev.map(p => p.id === paket.id ? { ...p, gorsel_url: urlData.publicUrl } : p));
-      if (duzenForm?.id === paket.id) setDuzenForm(f => ({ ...f, gorsel_url: urlData.publicUrl }));
+    for (const file of Array.from(files)) {
+      const uzanti = file.name.split('.').pop();
+      const dosyaAdi = `paket-${paketId}-${Date.now()}-${Math.random().toString(36).slice(2)}.${uzanti}`;
+      const { error } = await supabase.storage.from('galeri').upload(dosyaAdi, file);
+      if (!error) {
+        const { data: urlData } = supabase.storage.from('galeri').getPublicUrl(dosyaAdi);
+        await supabase.from('paket_gorselleri').insert({ paket_id: paketId, url: urlData.publicUrl });
+      }
     }
     setYukleniyor(false);
-    setGorselYuklenenPaket(null);
+    fetchPaketGorselleri();
   };
 
-  const paketGorselKaldir = async (paket) => {
-    if (!window.confirm('Görsel kaldırılsın mı?')) return;
-    if (paket.gorsel_url) {
-      const dosyaAdi = paket.gorsel_url.split('/').pop();
-      await supabase.storage.from('galeri').remove([dosyaAdi]);
-    }
-    await supabase.from('paketler').update({ gorsel_url: null }).eq('id', paket.id);
-    setPaketler(prev => prev.map(p => p.id === paket.id ? { ...p, gorsel_url: null } : p));
-    if (duzenForm?.id === paket.id) setDuzenForm(f => ({ ...f, gorsel_url: null }));
+  const paketGorselSil = async (gorsel) => {
+    if (!window.confirm('Bu görsel silinsin mi?')) return;
+    const dosyaAdi = gorsel.url.split('/').pop();
+    await supabase.storage.from('galeri').remove([dosyaAdi]);
+    await supabase.from('paket_gorselleri').delete().eq('id', gorsel.id);
+    fetchPaketGorselleri();
   };
 
   // ── Ayar işlemleri ──
@@ -469,22 +479,23 @@ export default function Admin() {
                       </div>
                     </div>
                     <div>
-                      <label style={labelStyle}>PAKET GÖRSELİ</label>
-                      <input ref={paketGorselRef} type="file" accept="image/*" style={{ display: 'none' }}
-                        onChange={e => { if (e.target.files[0]) paketGorselYukle(duzenForm, e.target.files[0]); }} />
-                      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button onClick={() => { setGorselYuklenenPaket(duzenForm.id); paketGorselRef.current.click(); }} disabled={yukleniyor}
-                          style={{ background: yukleniyor ? '#ccc' : GOLD, border: 'none', color: DARK, padding: '10px 24px', cursor: yukleniyor ? 'wait' : 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2 }}>
-                          {yukleniyor && gorselYuklenenPaket === duzenForm.id ? 'YÜKLENİYOR...' : 'GÖRSEL YÜKLE'}
-                        </button>
-                        {duzenForm.gorsel_url && (
-                          <>
-                            <img src={duzenForm.gorsel_url} alt="" style={{ height: 60, width: 100, objectFit: 'cover', borderRadius: 4, border: `1px solid ${GOLD}44` }} />
-                            <button onClick={() => paketGorselKaldir(duzenForm)}
-                              style={{ background: '#dc3545', border: 'none', color: '#fff', padding: '6px 14px', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>
-                              Kaldır
-                            </button>
-                          </>
+                      <label style={labelStyle}>PAKET GÖRSELLERİ</label>
+                      <input ref={paketGorselRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+                        onChange={e => { paketGorselYukle(duzenForm.id, e.target.files); paketGorselRef.current.value = ''; }} />
+                      <button onClick={() => paketGorselRef.current.click()} disabled={yukleniyor}
+                        style={{ background: yukleniyor ? '#ccc' : GOLD, border: 'none', color: DARK, padding: '10px 24px', cursor: yukleniyor ? 'wait' : 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, marginBottom: 12 }}>
+                        {yukleniyor ? 'YÜKLENİYOR...' : '+ GÖRSEL EKLE'}
+                      </button>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
+                        {(paketGorselleri[duzenForm.id] || []).map(g => (
+                          <div key={g.id} style={{ position: 'relative' }}>
+                            <img src={g.url} alt="" style={{ width: 90, height: 70, objectFit: 'cover', borderRadius: 4, border: `1px solid ${GOLD}44`, display: 'block' }} />
+                            <button onClick={() => paketGorselSil(g)}
+                              style={{ position: 'absolute', top: -6, right: -6, background: '#dc3545', border: 'none', color: '#fff', width: 20, height: 20, borderRadius: '50%', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>×</button>
+                          </div>
+                        ))}
+                        {(paketGorselleri[duzenForm.id] || []).length === 0 && (
+                          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: '#999' }}>Henüz görsel eklenmemiş</span>
                         )}
                       </div>
                     </div>
