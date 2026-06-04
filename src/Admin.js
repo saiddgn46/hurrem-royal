@@ -31,10 +31,14 @@ export default function Admin() {
   const [aktifFiltre, setAktifFiltre] = useState('Toplam');
   const [oturumAcikBirak, setOturumAcikBirak] = useState(false);
   const [paketGorselleri, setPaketGorselleri] = useState({});
+  const [etkinlikler, setEtkinlikler] = useState([]);
+  const [etkinlikForm, setEtkinlikForm] = useState({ baslik: '', tarih: '', aciklama: '' });
+  const [etkinlikGorsel, setEtkinlikGorsel] = useState('');
   const dosyaRef = useRef();
   const heroGorselRef = useRef();
   const salonGorselRef = useRef();
   const paketGorselRef = useRef();
+  const etkinlikGorselRef = useRef();
 
   const ADMIN_SIFRE = process.env.REACT_APP_ADMIN_SIFRE;
 
@@ -61,6 +65,7 @@ export default function Admin() {
       fetchPaketler();
       fetchAyarlar();
       fetchPaketGorselleri();
+      fetchEtkinlikler();
     }
   }, [girisYapildi]);
 
@@ -147,6 +152,43 @@ export default function Admin() {
       });
       setPaketGorselleri(map);
     }
+  };
+
+  // ── Etkinlik işlemleri ──
+  const fetchEtkinlikler = async () => {
+    const { data } = await supabase.from('etkinlikler').select('*').order('created_at', { ascending: false });
+    setEtkinlikler(data || []);
+  };
+
+  const etkinlikGorselYukle = async (file) => {
+    if (!file) return;
+    setYukleniyor(true);
+    const uzanti = file.name.split('.').pop();
+    const dosyaAdi = `etkinlik-${Date.now()}.${uzanti}`;
+    const { error } = await supabase.storage.from('galeri').upload(dosyaAdi, file);
+    if (!error) {
+      const { data: urlData } = supabase.storage.from('galeri').getPublicUrl(dosyaAdi);
+      setEtkinlikGorsel(urlData.publicUrl);
+    }
+    setYukleniyor(false);
+  };
+
+  const etkinlikEkle = async () => {
+    if (!etkinlikForm.baslik.trim()) return;
+    await supabase.from('etkinlikler').insert({ ...etkinlikForm, gorsel_url: etkinlikGorsel || null });
+    setEtkinlikForm({ baslik: '', tarih: '', aciklama: '' });
+    setEtkinlikGorsel('');
+    fetchEtkinlikler();
+  };
+
+  const etkinlikSil = async (id, gorselUrl) => {
+    if (!window.confirm('Bu etkinlik silinsin mi?')) return;
+    if (gorselUrl) {
+      const dosyaAdi = gorselUrl.split('/').pop();
+      await supabase.storage.from('galeri').remove([dosyaAdi]);
+    }
+    await supabase.from('etkinlikler').delete().eq('id', id);
+    fetchEtkinlikler();
   };
 
   // ── Paket işlemleri ──
@@ -284,7 +326,7 @@ export default function Admin() {
 
       {/* Sekmeler */}
       <div style={{ background: '#fff', borderBottom: `1px solid ${GOLD}33`, display: 'flex', padding: '0 48px', overflowX: 'auto' }}>
-        {[['rezervasyonlar', 'Rezervasyonlar'], ['galeri', 'Galeri'], ['paketler', 'Paketler'], ['ayarlar', 'Site Ayarları']].map(([key, label]) => (
+        {[['rezervasyonlar', 'Rezervasyonlar'], ['galeri', 'Galeri'], ['paketler', 'Paketler'], ['etkinlikler', 'Etkinlikler'], ['ayarlar', 'Site Ayarları']].map(([key, label]) => (
           <button key={key} onClick={() => setAktifSekme(key)}
             style={{
               background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
@@ -414,6 +456,84 @@ export default function Admin() {
                     <img src={foto.url} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
                     <button onClick={() => fotoSil(foto.id, foto.url)}
                       style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(220,53,69,0.9)', border: 'none', color: '#fff', width: 28, height: 28, borderRadius: '50%', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Etkinlikler ── */}
+        {aktifSekme === 'etkinlikler' && (
+          <div style={{ maxWidth: 800 }}>
+            {/* Yeni etkinlik ekle */}
+            <div style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, overflow: 'hidden', marginBottom: 40 }}>
+              <div style={{ background: DARK, padding: '14px 24px' }}>
+                <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 12, letterSpacing: 3 }}>YENİ ETKİNLİK EKLE</span>
+              </div>
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div>
+                    <label style={labelStyle}>ÇİFT / ETKİNLİK ADI *</label>
+                    <input value={etkinlikForm.baslik} onChange={e => setEtkinlikForm(f => ({ ...f, baslik: e.target.value }))}
+                      style={fieldStyle} placeholder="Fatma & Ali Düğünü" />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>TARİH</label>
+                    <input value={etkinlikForm.tarih} onChange={e => setEtkinlikForm(f => ({ ...f, tarih: e.target.value }))}
+                      style={fieldStyle} placeholder="15 Haziran 2025" />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>KISA AÇIKLAMA (opsiyonel)</label>
+                  <input value={etkinlikForm.aciklama} onChange={e => setEtkinlikForm(f => ({ ...f, aciklama: e.target.value }))}
+                    style={fieldStyle} placeholder="Örn: 350 kişilik muhteşem bir düğün gecesi" />
+                </div>
+                <div>
+                  <label style={labelStyle}>FOTOĞRAF</label>
+                  <input ref={etkinlikGorselRef} type="file" accept="image/*" style={{ display: 'none' }}
+                    onChange={e => etkinlikGorselYukle(e.target.files[0])} />
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button onClick={() => etkinlikGorselRef.current.click()} disabled={yukleniyor}
+                      style={{ background: yukleniyor ? '#ccc' : GOLD, border: 'none', color: DARK, padding: '10px 24px', cursor: yukleniyor ? 'wait' : 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2 }}>
+                      {yukleniyor ? 'YÜKLENİYOR...' : 'GÖRSEL YÜKLE'}
+                    </button>
+                    {etkinlikGorsel && (
+                      <>
+                        <img src={etkinlikGorsel} alt="" style={{ height: 60, width: 100, objectFit: 'cover', borderRadius: 4, border: `1px solid ${GOLD}44` }} />
+                        <button onClick={() => setEtkinlikGorsel('')}
+                          style={{ background: '#dc3545', border: 'none', color: '#fff', padding: '6px 14px', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>Kaldır</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <button onClick={etkinlikEkle} disabled={!etkinlikForm.baslik.trim()}
+                  style={{ background: etkinlikForm.baslik.trim() ? GOLD : '#ccc', border: 'none', color: DARK, padding: '14px 32px', cursor: etkinlikForm.baslik.trim() ? 'pointer' : 'default', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 3, alignSelf: 'flex-start' }}>
+                  ETKİNLİK EKLE
+                </button>
+              </div>
+            </div>
+
+            {/* Mevcut etkinlikler */}
+            <p style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 3, color: GOLD, marginBottom: 20 }}>
+              ETKİNLİKLER ({etkinlikler.length})
+            </p>
+            {etkinlikler.length === 0 ? (
+              <p style={{ fontFamily: "'Cormorant Garamond', serif", color: '#999', fontSize: 16 }}>Henüz etkinlik eklenmemiş.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {etkinlikler.map(ev => (
+                  <div key={ev.id} style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, padding: '16px 20px', display: 'flex', gap: 16, alignItems: 'center' }}>
+                    {ev.gorsel_url && (
+                      <img src={ev.gorsel_url} alt="" style={{ width: 80, height: 60, objectFit: 'cover', borderRadius: 4, flexShrink: 0, border: `1px solid ${GOLD}44` }} />
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontFamily: "'Cinzel', serif", fontSize: 13, color: DARK, marginBottom: 2 }}>{ev.baslik}</p>
+                      {ev.tarih && <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 13, color: GOLD }}>{ev.tarih}</p>}
+                      {ev.aciklama && <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 13, color: '#777', marginTop: 2 }}>{ev.aciklama}</p>}
+                    </div>
+                    <button onClick={() => etkinlikSil(ev.id, ev.gorsel_url)}
+                      style={{ background: '#dc3545', border: 'none', color: '#fff', width: 32, height: 32, borderRadius: '50%', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>×</button>
                   </div>
                 ))}
               </div>

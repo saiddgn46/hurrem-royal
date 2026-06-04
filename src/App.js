@@ -11,7 +11,7 @@ const CREAM = '#fdf6e3';
 const DARK = '#2c1f0e';
 const LIGHT_GOLD = '#f5d98b';
 
-const NAV_LINKS = ['Ana Sayfa', 'Salon', 'Paketler', 'Galeri', 'İletişim'];
+const NAV_LINKS = ['Ana Sayfa', 'Salon', 'Paketler', 'Galeri', 'Etkinlikler', 'İletişim'];
 
 const PACKAGES = [
   { name: 'Gümüş', capacity: '100–200 Kişi', price: '₺200.000', features: ['Temel dekorasyon', 'İkram servisi', 'Ses sistemi', 'Otopark'], featured: false },
@@ -34,7 +34,7 @@ function scrollToSection(id) {
 }
 
 const sectionId = (link) =>
-  ({ Salon: 'salon', Paketler: 'paketler', Galeri: 'galeri', 'İletişim': 'iletisim' }[link]);
+  ({ Salon: 'salon', Paketler: 'paketler', Galeri: 'galeri', Etkinlikler: 'etkinlikler', 'İletişim': 'iletisim' }[link]);
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 function Navbar({ active, setActive }) {
@@ -359,6 +359,46 @@ function Galeri() {
   );
 }
 
+// ─── Etkinlikler ──────────────────────────────────────────────────────────────
+function Etkinlikler() {
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    supabase.from('etkinlikler').select('*').order('created_at', { ascending: false }).then(({ data }) => {
+      if (data) setEvents(data);
+    });
+  }, []);
+
+  if (events.length === 0) return null;
+
+  return (
+    <section id="etkinlikler" style={{ padding: '80px 20px', background: CREAM, textAlign: 'center' }}>
+      <p style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 4, color: GOLD, marginBottom: 16 }}>ANILARA</p>
+      <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 300, color: DARK, marginBottom: 16 }}>Mutlu Çiftlerimiz</h2>
+      <div style={{ width: 60, height: 1, background: GOLD, margin: '0 auto 56px' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 24, maxWidth: 1100, margin: '0 auto' }}>
+        {events.map((event, i) => (
+          <motion.div key={event.id}
+            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.08 }}
+            style={{ position: 'relative', overflow: 'hidden', aspectRatio: '4/3', background: DARK }}>
+            {event.gorsel_url && (
+              <img src={event.gorsel_url} alt={event.baslik}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.5s' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+            )}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(transparent, rgba(0,0,0,0.82))', padding: '40px 20px 18px' }}>
+              <p style={{ fontFamily: "'Cinzel', serif", fontSize: 14, color: '#fff', marginBottom: event.tarih ? 4 : 0, letterSpacing: 1 }}>{event.baslik}</p>
+              {event.tarih && <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 13, color: GOLD, letterSpacing: 1 }}>{event.tarih}</p>}
+              {event.aciklama && <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: '#d4c5a9', marginTop: 6 }}>{event.aciklama}</p>}
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ─── Rezervasyon Formu ────────────────────────────────────────────────────────
 function RezervasyonFormu({ seciliPaket }) {
   const [form, setForm] = useState({ name: '', phone: '', date: '', paket: seciliPaket || '', note: '' });
@@ -543,6 +583,7 @@ function AnaSayfa() {
       { id: 'salon', link: 'Salon' },
       { id: 'paketler', link: 'Paketler' },
       { id: 'galeri', link: 'Galeri' },
+      { id: 'etkinlikler', link: 'Etkinlikler' },
       { id: 'iletisim', link: 'İletişim' },
     ];
     const observer = new IntersectionObserver(entries => {
@@ -572,6 +613,7 @@ function AnaSayfa() {
       <Salon metin={ayarlar.salon_metin} gorsel={ayarlar.salon_gorsel} />
       <Paketler onPaketSec={handlePaketSec} />
       <Galeri />
+      <Etkinlikler />
       <Iletisim seciliPaket={seciliPaket} ayarlar={ayarlar} />
       <Footer />
       <WhatsAppButon numara={ayarlar.whatsapp || ayarlar.telefon} />
