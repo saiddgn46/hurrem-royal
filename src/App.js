@@ -406,6 +406,7 @@ function RezervasyonFormu({ seciliPaket }) {
   const [, setTurnstileToken] = useState('');
   const [gonderildi, setGonderildi] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hata, setHata] = useState('');
 
   useEffect(() => {
     supabase.from('paketler').select('name, capacity, price').order('sira').then(({ data }) => {
@@ -422,13 +423,32 @@ function RezervasyonFormu({ seciliPaket }) {
 
   const handleSubmit = async () => {
     if (!form.name || !form.phone || !form.date) return;
+    setHata('');
     setLoading(true);
+
+    const { data: dolu } = await supabase
+      .from('rezervasyonlar')
+      .select('id')
+      .eq('tarih', form.date)
+      .in('durum', ['Onaylandı', 'Ön Rezervasyon'])
+      .limit(1);
+
+    if (dolu && dolu.length > 0) {
+      setLoading(false);
+      setHata('Bu tarih alınmış. Lütfen başka bir tarih seçiniz.');
+      return;
+    }
+
     const { error } = await supabase.from('rezervasyonlar').insert({
       ad_soyad: form.name, telefon: form.phone, tarih: form.date,
       paket: form.paket, not: form.note, durum: 'Beklemede',
     });
     setLoading(false);
-    if (!error) setGonderildi(true);
+    if (error) {
+      setHata('Bu tarih dolu. Lütfen başka bir tarih seçiniz.');
+    } else {
+      setGonderildi(true);
+    }
   };
 
   const fs = {
@@ -462,6 +482,11 @@ function RezervasyonFormu({ seciliPaket }) {
         </select>
         <textarea name="note" placeholder="Notunuz (opsiyonel)" value={form.note} onChange={handleChange} rows={3} style={{ ...fs, resize: 'vertical' }} />
         <Turnstile sitekey={process.env.REACT_APP_TURNSTILE_KEY || '1x00000000000000000000AA'} onVerify={token => setTurnstileToken(token)} />
+        {hata && (
+          <div style={{ background: '#fff0f0', border: '1px solid #ffcccc', padding: '12px 16px', fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: '#c0392b', textAlign: 'center' }}>
+            {hata}
+          </div>
+        )}
         <button onClick={handleSubmit} disabled={loading || !form.name || !form.phone || !form.date}
           style={{ width: '100%', padding: '16px 0', background: GOLD, border: 'none', color: DARK, fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3, cursor: loading ? 'wait' : 'pointer', opacity: (!form.name || !form.phone || !form.date) ? 0.6 : 1 }}>
           {loading ? '...' : 'GÖNDER'}
