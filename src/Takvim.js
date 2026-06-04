@@ -39,8 +39,6 @@ export default function Takvim({ onTarihSec }) {
 
     const offset= date.getTimezoneOffset();
     const localDate =new Date(date.getTime() - offset * 60 * 1000);
-    const tarihStr = localDate.toISOString().split('T')[0];
-
     if (onTarihSec) onTarihSec(date.toISOString().split('T')[0]);
   };
 

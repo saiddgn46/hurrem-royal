@@ -238,7 +238,7 @@ function Galeri() {
 function RezervasyonFormu({ seciliPaket }) {
   const [form, setForm] = useState({ name: '', phone: '', date: '', paket: seciliPaket || '', note: '' });
   const [pkgList, setPkgList] = useState([]);
-  const [turnstileToken, setTurnstileToken] = useState('');
+  const [, setTurnstileToken] = useState('');
   const [gonderildi, setGonderildi] = useState(false);
   const [loading, setLoading] = useState(false);
 
