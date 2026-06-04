@@ -100,14 +100,18 @@ function Navbar({ active, setActive }) {
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 function Hero({ onRezervasyon, slogan, gorsel }) {
   return (
-    <section style={{ position: 'relative', height: '100svh', minHeight: 580, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: DARK }}>
+    <section className="hero-section" style={{ position: 'relative', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: DARK }}>
       <img src={gorsel || "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1400&q=80"} alt="salon"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center center', opacity: 0.6 }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.55) 100%)' }} />
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.65 }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.5) 100%)' }} />
       <style>{`
-        @media (max-width: 480px) {
-          .hero-btn { width: auto !important; padding: 14px 32px !important; }
-          .hero-divider { margin: 16px auto !important; }
+        .hero-section { min-height: 500px; }
+        @media (max-width: 600px) {
+          .hero-section { height: 100svh !important; min-height: 480px !important; }
+          .hero-section img { object-position: center 20% !important; }
+          .hero-btn { padding: 13px 28px !important; font-size: 11px !important; }
+          .hero-divider { margin: 14px auto !important; }
+          .hero-slogan { margin-bottom: 24px !important; }
         }
       `}</style>
       <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 32px', maxWidth: 640, width: '100%' }}>
@@ -119,7 +123,7 @@ function Hero({ onRezervasyon, slogan, gorsel }) {
             Kahramanmaraş · Est. 2024
           </p>
           <div className="hero-divider" style={{ width: 60, height: 1, background: GOLD, margin: '20px auto' }} />
-          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(16px, 3.5vw, 26px)', marginBottom: 32, fontStyle: 'italic', color: '#f0e8d5' }}>
+          <p className="hero-slogan" style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(16px, 3.5vw, 26px)', marginBottom: 32, fontStyle: 'italic', color: '#f0e8d5' }}>
             {slogan || 'En özel anınız, en güzel mekânda'}
           </p>
           <button className="hero-btn" onClick={onRezervasyon}
