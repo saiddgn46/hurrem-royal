@@ -276,11 +276,11 @@ function Paketler({ onPaketSec }) {
       <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', maxWidth: 1100, margin: '0 auto' }}>
         {pkgList.map((pkg) => (
           <motion.div key={pkg.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
-            style={{ flex: '1 1 280px', maxWidth: 340, background: pkg.featured ? GOLD : 'rgba(255,255,255,0.05)', border: `1px solid ${pkg.featured ? GOLD : GOLD + '44'}`, textAlign: 'center', position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            style={{ flex: '1 1 280px', maxWidth: 340, background: pkg.featured ? GOLD : 'rgba(255,255,255,0.05)', border: `1px solid ${pkg.featured ? GOLD : GOLD + '44'}`, textAlign: 'center', position: 'relative', display: 'flex', flexDirection: 'column' }}>
             {(pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url) ? (
               <div style={{ position: 'relative', flexShrink: 0 }}>
                 <img src={pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url} alt={pkg.name}
-                  style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+                  style={{ width: '100%', height: 220, objectFit: 'contain', objectPosition: 'center', display: 'block', background: '#0d0800' }} />
                 {pkg.featured && (
                   <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', background: DARK, border: `1px solid ${GOLD}`, padding: '4px 20px', fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: 3, color: GOLD, whiteSpace: 'nowrap' }}>
                     EN POPÜLER
