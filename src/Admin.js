@@ -29,15 +29,27 @@ export default function Admin() {
   const [duzenForm, setDuzenForm] = useState(null);
   const [ayarKaydedildi, setAyarKaydedildi] = useState(false);
   const [aktifFiltre, setAktifFiltre] = useState('Toplam');
+  const [oturumAcikBirak, setOturumAcikBirak] = useState(false);
   const dosyaRef = useRef();
   const heroGorselRef = useRef();
   const salonGorselRef = useRef();
 
   const ADMIN_SIFRE = process.env.REACT_APP_ADMIN_SIFRE;
 
+  useEffect(() => {
+    if (localStorage.getItem('hurrem_admin') === 'true') setGirisYapildi(true);
+  }, []);
+
   const giris = () => {
-    if (sifre === ADMIN_SIFRE) setGirisYapildi(true);
-    else alert('Şifre yanlış!');
+    if (sifre === ADMIN_SIFRE) {
+      if (oturumAcikBirak) localStorage.setItem('hurrem_admin', 'true');
+      setGirisYapildi(true);
+    } else alert('Şifre yanlış!');
+  };
+
+  const cikis = () => {
+    localStorage.removeItem('hurrem_admin');
+    setGirisYapildi(false);
   };
 
   useEffect(() => {
@@ -203,6 +215,11 @@ export default function Admin() {
           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: GOLD, marginBottom: 16 }}>
           {sifreGoster ? 'Gizle' : 'Şifreyi Göster'}
         </button>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, cursor: 'pointer', justifyContent: 'center' }}>
+          <input type="checkbox" checked={oturumAcikBirak} onChange={e => setOturumAcikBirak(e.target.checked)}
+            style={{ width: 16, height: 16, accentColor: GOLD, cursor: 'pointer' }} />
+          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: DARK }}>Oturumu açık bırak</span>
+        </label>
         <button onClick={giris}
           style={{ width: '100%', padding: 14, background: GOLD, border: 'none', color: '#fff', fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 3, cursor: 'pointer' }}>
           GİRİŞ
@@ -220,7 +237,7 @@ export default function Admin() {
         <h1 style={{ fontFamily: "'Cinzel', serif", color: GOLD, margin: 0, fontSize: 20, letterSpacing: 3 }}>
           HÜRREM ROYAL — Admin
         </h1>
-        <button onClick={() => setGirisYapildi(false)}
+        <button onClick={cikis}
           style={{ background: 'none', border: `1px solid ${GOLD}44`, color: GOLD, padding: '8px 20px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 2 }}>
           ÇIKIŞ
         </button>
