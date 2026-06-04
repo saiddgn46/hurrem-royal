@@ -131,16 +131,21 @@ export default function Takvim({ onTarihSec }) {
       <Calendar
         onChange={handleTarih}
         value={seciliTarih}
-        tileClassName={({ date }) => {
+        tileClassName={({ date, view }) => {
+          if (view !== 'month') return null;
           const durum = tarihDurumu(date);
           if (durum === 'dolu') return 'dolu';
           if (durum === 'on_rezervasyon') return 'on-rezervasyon';
-          if (date >= new Date()) return 'bos';
+          const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+          if (date >= bugun) return 'bos';
           return null;
         }}
-        tileDisabled={({ date }) =>
-          tarihDurumu(date) === 'dolu' || date < new Date()
-        }
+        tileDisabled={({ date, view }) => {
+          const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+          if (view === 'month') return tarihDurumu(date) === 'dolu' || date < bugun;
+          const buAyin1i = new Date(bugun.getFullYear(), bugun.getMonth(), 1);
+          return date < buAyin1i;
+        }}
         locale="tr-TR"
       />
 
