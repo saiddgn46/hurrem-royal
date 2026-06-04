@@ -106,9 +106,6 @@ function Hero({ onRezervasyon, slogan }) {
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.55) 100%)' }} />
       <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 24px' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-          <div style={{ display: 'inline-block', border: `1px solid ${GOLD}`, padding: '4px 20px', marginBottom: 24, fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 4, color: GOLD }}>
-            ROYAL
-          </div>
           <h1 style={{ fontFamily: "'Cinzel', serif", fontSize: 'clamp(36px, 6vw, 72px)', fontWeight: 400, marginBottom: 8, lineHeight: 1.2 }}>
             HÜRREM ROYAL
           </h1>
