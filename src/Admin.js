@@ -158,6 +158,14 @@ export default function Admin() {
     setYukleniyor(false);
   };
 
+  const gorselKaldir = async (anahtar, url) => {
+    if (!window.confirm('Görsel kaldırılsın mı? Varsayılan görsel kullanılacak.')) return;
+    const dosyaAdi = url.split('/').pop();
+    await supabase.storage.from('galeri').remove([dosyaAdi]);
+    await supabase.from('site_ayarlari').delete().eq('anahtar', anahtar);
+    ayarDegistir(anahtar, '');
+  };
+
   // ── Ayar işlemleri ──
   const ayarDegistir = (key, val) => setAyarForm(f => ({ ...f, [key]: val }));
 
@@ -481,7 +489,13 @@ export default function Admin() {
                       {yukleniyor ? 'YÜKLENİYOR...' : 'GÖRSEL YÜKLE'}
                     </button>
                     {ayarForm.hero_gorsel && (
-                      <img src={ayarForm.hero_gorsel} alt="hero" style={{ height: 60, width: 120, objectFit: 'cover', border: `1px solid ${GOLD}44`, borderRadius: 4 }} />
+                      <>
+                        <img src={ayarForm.hero_gorsel} alt="hero" style={{ height: 60, width: 120, objectFit: 'cover', border: `1px solid ${GOLD}44`, borderRadius: 4 }} />
+                        <button onClick={() => gorselKaldir('hero_gorsel', ayarForm.hero_gorsel)}
+                          style={{ background: '#dc3545', border: 'none', color: '#fff', padding: '6px 14px', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>
+                          Kaldır
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -513,7 +527,13 @@ export default function Admin() {
                       {yukleniyor ? 'YÜKLENİYOR...' : 'GÖRSEL YÜKLE'}
                     </button>
                     {ayarForm.salon_gorsel && (
-                      <img src={ayarForm.salon_gorsel} alt="salon" style={{ height: 60, width: 120, objectFit: 'cover', border: `1px solid ${GOLD}44`, borderRadius: 4 }} />
+                      <>
+                        <img src={ayarForm.salon_gorsel} alt="salon" style={{ height: 60, width: 120, objectFit: 'cover', border: `1px solid ${GOLD}44`, borderRadius: 4 }} />
+                        <button onClick={() => gorselKaldir('salon_gorsel', ayarForm.salon_gorsel)}
+                          style={{ background: '#dc3545', border: 'none', color: '#fff', padding: '6px 14px', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>
+                          Kaldır
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
