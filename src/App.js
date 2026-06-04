@@ -166,9 +166,68 @@ function Salon({ metin, gorsel }) {
   );
 }
 
+// ─── Paket Detay Modal ────────────────────────────────────────────────────────
+function PaketDetayModal({ pkg, onKapat, onSec }) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      onClick={onKapat}>
+      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }}
+        style={{ background: DARK, maxWidth: 900, width: '100%', maxHeight: '90vh', overflowY: 'auto', position: 'relative', display: 'flex', flexWrap: 'wrap' }}
+        onClick={e => e.stopPropagation()}>
+
+        <button onClick={onKapat}
+          style={{ position: 'absolute', top: 14, right: 18, background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', zIndex: 10, lineHeight: 1 }}>×</button>
+
+        {pkg.gorsel_url && (
+          <div style={{ flex: '1 1 300px', minHeight: 300 }}>
+            <img src={pkg.gorsel_url} alt={pkg.name}
+              style={{ width: '100%', height: '100%', minHeight: 300, objectFit: 'cover', display: 'block' }} />
+          </div>
+        )}
+
+        <div style={{ flex: '1 1 300px', padding: '48px 40px' }}>
+          {pkg.featured && (
+            <div style={{ display: 'inline-block', border: `1px solid ${GOLD}`, padding: '3px 16px', fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: 3, color: GOLD, marginBottom: 20 }}>
+              EN POPÜLER
+            </div>
+          )}
+          <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: 32, color: '#fff', marginBottom: 8 }}>{pkg.name}</h2>
+          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: GOLD, marginBottom: 16, letterSpacing: 1 }}>{pkg.capacity}</p>
+          <div style={{ width: 40, height: 1, background: GOLD, marginBottom: 24 }} />
+          <div style={{ fontFamily: "'Cinzel', serif", fontSize: 36, color: GOLD, marginBottom: 32 }}>{pkg.price}</div>
+          <ul style={{ listStyle: 'none', padding: 0, marginBottom: 40 }}>
+            {pkg.features.map(f => (
+              <li key={f} style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 17, color: '#d4c5a9', padding: '9px 0', borderBottom: `1px solid ${GOLD}22`, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ color: GOLD, fontSize: 14, flexShrink: 0 }}>✓</span>{f}
+              </li>
+            ))}
+          </ul>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <button onClick={() => { onSec(pkg.name); onKapat(); }}
+              style={{ flex: 1, minWidth: 160, padding: 16, background: GOLD, border: 'none', color: DARK, fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 3, cursor: 'pointer' }}>
+              REZERVASYON YAP
+            </button>
+            <button onClick={onKapat}
+              style={{ padding: '16px 24px', background: 'none', border: `1px solid ${GOLD}55`, color: GOLD, fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 2, cursor: 'pointer' }}>
+              KAPAT
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ─── Paketler ─────────────────────────────────────────────────────────────────
 function Paketler({ onPaketSec }) {
   const [pkgList, setPkgList] = useState([]);
+  const [seciliPkg, setSeciliPkg] = useState(null);
 
   useEffect(() => {
     supabase.from('paketler').select('*').order('sira').then(({ data }) => {
@@ -184,31 +243,47 @@ function Paketler({ onPaketSec }) {
       <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', maxWidth: 1100, margin: '0 auto' }}>
         {pkgList.map((pkg) => (
           <motion.div key={pkg.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
-            style={{ flex: '1 1 280px', maxWidth: 340, background: pkg.featured ? GOLD : 'rgba(255,255,255,0.05)', border: `1px solid ${pkg.featured ? GOLD : GOLD + '44'}`, padding: '40px 32px', textAlign: 'center', position: 'relative' }}>
+            style={{ flex: '1 1 280px', maxWidth: 340, background: pkg.featured ? GOLD : 'rgba(255,255,255,0.05)', border: `1px solid ${pkg.featured ? GOLD : GOLD + '44'}`, padding: '40px 32px', textAlign: 'center', position: 'relative', display: 'flex', flexDirection: 'column' }}>
             {pkg.featured && (
               <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: DARK, border: `1px solid ${GOLD}`, padding: '4px 20px', fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: 3, color: GOLD }}>
                 EN POPÜLER
               </div>
             )}
+            {pkg.gorsel_url && (
+              <div style={{ margin: '0 -32px 24px', marginTop: -40 }}>
+                <img src={pkg.gorsel_url} alt={pkg.name} style={{ width: '100%', height: 180, objectFit: 'cover', display: 'block' }} />
+              </div>
+            )}
             <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 22, color: pkg.featured ? DARK : '#fff', marginBottom: 8 }}>{pkg.name}</h3>
             <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: pkg.featured ? DARK + 'aa' : GOLD, marginBottom: 24, letterSpacing: 1 }}>{pkg.capacity}</p>
             <div style={{ fontFamily: "'Cinzel', serif", fontSize: 28, color: pkg.featured ? DARK : GOLD, marginBottom: 32 }}>{pkg.price}</div>
-            <ul style={{ listStyle: 'none', padding: 0, marginBottom: 32, textAlign: 'left' }}>
+            <ul style={{ listStyle: 'none', padding: 0, marginBottom: 32, textAlign: 'left', flex: 1 }}>
               {pkg.features.map(f => (
                 <li key={f} style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: pkg.featured ? DARK : '#d4c5a9', padding: '6px 0', borderBottom: `1px solid ${pkg.featured ? DARK + '22' : GOLD + '22'}` }}>
                   <span style={{ color: GOLD, marginRight: 8 }}>✓</span> {f}
                 </li>
               ))}
             </ul>
-            <button onClick={() => onPaketSec(pkg.name)}
-              style={{ width: '100%', padding: '14px 0', background: pkg.featured ? DARK : 'none', border: `1px solid ${pkg.featured ? DARK : GOLD}`, color: pkg.featured ? '#fff' : GOLD, fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 3, cursor: 'pointer', transition: 'opacity 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-              onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-              SEÇ
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setSeciliPkg(pkg)}
+                style={{ flex: 1, padding: '14px 0', background: 'none', border: `1px solid ${pkg.featured ? DARK + '99' : GOLD + '88'}`, color: pkg.featured ? DARK : GOLD, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'opacity 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                İNCELE
+              </button>
+              <button onClick={() => onPaketSec(pkg.name)}
+                style={{ flex: 1, padding: '14px 0', background: pkg.featured ? DARK : 'none', border: `1px solid ${pkg.featured ? DARK : GOLD}`, color: pkg.featured ? '#fff' : GOLD, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'opacity 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                SEÇ
+              </button>
+            </div>
           </motion.div>
         ))}
       </div>
+      <AnimatePresence>
+        {seciliPkg && <PaketDetayModal pkg={seciliPkg} onKapat={() => setSeciliPkg(null)} onSec={onPaketSec} />}
+      </AnimatePresence>
     </section>
   );
 }

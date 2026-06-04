@@ -33,6 +33,8 @@ export default function Admin() {
   const dosyaRef = useRef();
   const heroGorselRef = useRef();
   const salonGorselRef = useRef();
+  const paketGorselRef = useRef();
+  const [gorselYuklenenPaket, setGorselYuklenenPaket] = useState(null);
 
   const ADMIN_SIFRE = process.env.REACT_APP_ADMIN_SIFRE;
 
@@ -177,6 +179,33 @@ export default function Admin() {
     await supabase.storage.from('galeri').remove([dosyaAdi]);
     await supabase.from('site_ayarlari').delete().eq('anahtar', anahtar);
     ayarDegistir(anahtar, '');
+  };
+
+  const paketGorselYukle = async (paket, file) => {
+    if (!file) return;
+    setYukleniyor(true);
+    const uzanti = file.name.split('.').pop();
+    const dosyaAdi = `paket-${paket.id}-${Date.now()}.${uzanti}`;
+    const { error } = await supabase.storage.from('galeri').upload(dosyaAdi, file);
+    if (!error) {
+      const { data: urlData } = supabase.storage.from('galeri').getPublicUrl(dosyaAdi);
+      await supabase.from('paketler').update({ gorsel_url: urlData.publicUrl }).eq('id', paket.id);
+      setPaketler(prev => prev.map(p => p.id === paket.id ? { ...p, gorsel_url: urlData.publicUrl } : p));
+      if (duzenForm?.id === paket.id) setDuzenForm(f => ({ ...f, gorsel_url: urlData.publicUrl }));
+    }
+    setYukleniyor(false);
+    setGorselYuklenenPaket(null);
+  };
+
+  const paketGorselKaldir = async (paket) => {
+    if (!window.confirm('Görsel kaldırılsın mı?')) return;
+    if (paket.gorsel_url) {
+      const dosyaAdi = paket.gorsel_url.split('/').pop();
+      await supabase.storage.from('galeri').remove([dosyaAdi]);
+    }
+    await supabase.from('paketler').update({ gorsel_url: null }).eq('id', paket.id);
+    setPaketler(prev => prev.map(p => p.id === paket.id ? { ...p, gorsel_url: null } : p));
+    if (duzenForm?.id === paket.id) setDuzenForm(f => ({ ...f, gorsel_url: null }));
   };
 
   // ── Ayar işlemleri ──
@@ -437,6 +466,26 @@ export default function Admin() {
                         <button onClick={ozellikEkle} style={{ background: 'none', border: `1px dashed ${GOLD}`, color: GOLD, padding: '10px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2 }}>
                           + ÖZELLİK EKLE
                         </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>PAKET GÖRSELİ</label>
+                      <input ref={paketGorselRef} type="file" accept="image/*" style={{ display: 'none' }}
+                        onChange={e => { if (e.target.files[0]) paketGorselYukle(duzenForm, e.target.files[0]); }} />
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button onClick={() => { setGorselYuklenenPaket(duzenForm.id); paketGorselRef.current.click(); }} disabled={yukleniyor}
+                          style={{ background: yukleniyor ? '#ccc' : GOLD, border: 'none', color: DARK, padding: '10px 24px', cursor: yukleniyor ? 'wait' : 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2 }}>
+                          {yukleniyor && gorselYuklenenPaket === duzenForm.id ? 'YÜKLENİYOR...' : 'GÖRSEL YÜKLE'}
+                        </button>
+                        {duzenForm.gorsel_url && (
+                          <>
+                            <img src={duzenForm.gorsel_url} alt="" style={{ height: 60, width: 100, objectFit: 'cover', borderRadius: 4, border: `1px solid ${GOLD}44` }} />
+                            <button onClick={() => paketGorselKaldir(duzenForm)}
+                              style={{ background: '#dc3545', border: 'none', color: '#fff', padding: '6px 14px', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>
+                              Kaldır
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <button onClick={paketKaydet} style={{ background: GOLD, border: 'none', color: DARK, padding: '14px', cursor: 'pointer', alignSelf: 'flex-start', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 3, minWidth: 160 }}>
