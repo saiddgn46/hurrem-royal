@@ -406,7 +406,9 @@ function WhatsAppButon({ numara }) {
 function AnaSayfa() {
   const [active, setActive] = useState('Ana Sayfa');
   const [seciliPaket, setSeciliPaket] = useState(null);
-  const [ayarlar, setAyarlar] = useState({});
+  const [ayarlar, setAyarlar] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('hurrem_ayarlar') || '{}'); } catch { return {}; }
+  });
 
   useEffect(() => {
     supabase.from('site_ayarlari').select('*').then(({ data }) => {
@@ -414,6 +416,7 @@ function AnaSayfa() {
         const map = {};
         data.forEach(r => { map[r.anahtar] = r.deger; });
         setAyarlar(map);
+        localStorage.setItem('hurrem_ayarlar', JSON.stringify(map));
       }
     });
   }, []);
