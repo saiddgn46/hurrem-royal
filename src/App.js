@@ -277,9 +277,9 @@ function Paketler({ onPaketSec }) {
         {pkgList.map((pkg) => (
           <motion.div key={pkg.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
             style={{ flex: '1 1 280px', maxWidth: 340, background: pkg.featured ? GOLD : 'rgba(255,255,255,0.05)', border: `1px solid ${pkg.featured ? GOLD : GOLD + '44'}`, textAlign: 'center', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-            {(pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url) ? (
+            {pkgGorselleri[pkg.id]?.[0] ? (
               <div style={{ position: 'relative', flexShrink: 0 }}>
-                <img src={pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url} alt={pkg.name}
+                <img src={pkgGorselleri[pkg.id][0]} alt={pkg.name}
                   style={{ width: '100%', height: 220, objectFit: 'contain', objectPosition: 'center', display: 'block', background: pkg.featured ? GOLD : DARK }} />
                 {pkg.featured && (
                   <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', background: DARK, border: `1px solid ${GOLD}`, padding: '4px 20px', fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: 3, color: GOLD, whiteSpace: 'nowrap' }}>
@@ -306,7 +306,7 @@ function Paketler({ onPaketSec }) {
                 ))}
               </ul>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setSeciliPkg({ ...pkg, images: pkgGorselleri[pkg.id] || (pkg.gorsel_url ? [pkg.gorsel_url] : []) })}
+                <button onClick={() => setSeciliPkg({ ...pkg, images: pkgGorselleri[pkg.id] || [] })}
                   style={{ flex: 1, padding: '14px 0', background: 'none', border: `1px solid ${pkg.featured ? DARK + '99' : GOLD + '88'}`, color: pkg.featured ? DARK : GOLD, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'opacity 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
