@@ -276,41 +276,49 @@ function Paketler({ onPaketSec }) {
       <div style={{ display: 'flex', gap: 24, justifyContent: 'center', flexWrap: 'wrap', maxWidth: 1100, margin: '0 auto' }}>
         {pkgList.map((pkg) => (
           <motion.div key={pkg.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
-            style={{ flex: '1 1 280px', maxWidth: 340, background: pkg.featured ? GOLD : 'rgba(255,255,255,0.05)', border: `1px solid ${pkg.featured ? GOLD : GOLD + '44'}`, padding: '40px 32px', textAlign: 'center', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-            {pkg.featured && (
-              <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: DARK, border: `1px solid ${GOLD}`, padding: '4px 20px', fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: 3, color: GOLD }}>
-                EN POPÜLER
-              </div>
-            )}
-            {(pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url) && (
-              <div style={{ margin: '0 -32px 28px', marginTop: -40, overflow: 'hidden', lineHeight: 0 }}>
+            style={{ flex: '1 1 280px', maxWidth: 340, background: pkg.featured ? GOLD : 'rgba(255,255,255,0.05)', border: `1px solid ${pkg.featured ? GOLD : GOLD + '44'}`, textAlign: 'center', position: 'relative', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {(pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url) ? (
+              <div style={{ position: 'relative', flexShrink: 0 }}>
                 <img src={pkgGorselleri[pkg.id]?.[0] || pkg.gorsel_url} alt={pkg.name}
-                  style={{ width: '100%', height: 240, objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+                  style={{ width: '100%', height: 220, objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+                {pkg.featured && (
+                  <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', background: DARK, border: `1px solid ${GOLD}`, padding: '4px 20px', fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: 3, color: GOLD, whiteSpace: 'nowrap' }}>
+                    EN POPÜLER
+                  </div>
+                )}
               </div>
+            ) : (
+              pkg.featured && (
+                <div style={{ position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)', background: DARK, border: `1px solid ${GOLD}`, padding: '4px 20px', fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: 3, color: GOLD, whiteSpace: 'nowrap' }}>
+                  EN POPÜLER
+                </div>
+              )
             )}
-            <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 22, color: pkg.featured ? DARK : '#fff', marginBottom: 8 }}>{pkg.name}</h3>
-            <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: pkg.featured ? DARK + 'aa' : GOLD, marginBottom: 24, letterSpacing: 1 }}>{pkg.capacity}</p>
-            <div style={{ fontFamily: "'Cinzel', serif", fontSize: 28, color: pkg.featured ? DARK : GOLD, marginBottom: 32 }}>{pkg.price}</div>
-            <ul style={{ listStyle: 'none', padding: 0, marginBottom: 32, textAlign: 'left', flex: 1 }}>
-              {pkg.features.map(f => (
-                <li key={f} style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: pkg.featured ? DARK : '#d4c5a9', padding: '6px 0', borderBottom: `1px solid ${pkg.featured ? DARK + '22' : GOLD + '22'}` }}>
-                  <span style={{ color: GOLD, marginRight: 8 }}>✓</span> {f}
-                </li>
-              ))}
-            </ul>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setSeciliPkg({ ...pkg, images: pkgGorselleri[pkg.id] || (pkg.gorsel_url ? [pkg.gorsel_url] : []) })}
-                style={{ flex: 1, padding: '14px 0', background: 'none', border: `1px solid ${pkg.featured ? DARK + '99' : GOLD + '88'}`, color: pkg.featured ? DARK : GOLD, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'opacity 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
-                onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                İNCELE
-              </button>
-              <button onClick={() => onPaketSec(pkg.name)}
-                style={{ flex: 1, padding: '14px 0', background: pkg.featured ? DARK : 'none', border: `1px solid ${pkg.featured ? DARK : GOLD}`, color: pkg.featured ? '#fff' : GOLD, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'opacity 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
-                onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                SEÇ
-              </button>
+            <div style={{ padding: '32px 32px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <h3 style={{ fontFamily: "'Cinzel', serif", fontSize: 22, color: pkg.featured ? DARK : '#fff', marginBottom: 8 }}>{pkg.name}</h3>
+              <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: pkg.featured ? DARK + 'aa' : GOLD, marginBottom: 24, letterSpacing: 1 }}>{pkg.capacity}</p>
+              <div style={{ fontFamily: "'Cinzel', serif", fontSize: 28, color: pkg.featured ? DARK : GOLD, marginBottom: 32 }}>{pkg.price}</div>
+              <ul style={{ listStyle: 'none', padding: 0, marginBottom: 32, textAlign: 'left', flex: 1 }}>
+                {pkg.features.map(f => (
+                  <li key={f} style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: pkg.featured ? DARK : '#d4c5a9', padding: '6px 0', borderBottom: `1px solid ${pkg.featured ? DARK + '22' : GOLD + '22'}` }}>
+                    <span style={{ color: GOLD, marginRight: 8 }}>✓</span> {f}
+                  </li>
+                ))}
+              </ul>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setSeciliPkg({ ...pkg, images: pkgGorselleri[pkg.id] || (pkg.gorsel_url ? [pkg.gorsel_url] : []) })}
+                  style={{ flex: 1, padding: '14px 0', background: 'none', border: `1px solid ${pkg.featured ? DARK + '99' : GOLD + '88'}`, color: pkg.featured ? DARK : GOLD, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'opacity 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                  İNCELE
+                </button>
+                <button onClick={() => onPaketSec(pkg.name)}
+                  style={{ flex: 1, padding: '14px 0', background: pkg.featured ? DARK : 'none', border: `1px solid ${pkg.featured ? DARK : GOLD}`, color: pkg.featured ? '#fff' : GOLD, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 3, cursor: 'pointer', transition: 'opacity 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                  SEÇ
+                </button>
+              </div>
             </div>
           </motion.div>
         ))}
