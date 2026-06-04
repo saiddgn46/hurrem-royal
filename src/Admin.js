@@ -1,17 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
 
 const GOLD = "#C9A84C";
 const DARK = "#2c1f0e";
 const CREAM = "#fdf6e3";
 
+const fieldStyle = {
+  width: '100%', padding: '10px 14px', border: `1px solid ${GOLD}66`,
+  background: '#fff', fontFamily: "'Cormorant Garamond', serif",
+  fontSize: 15, color: DARK, outline: 'none', boxSizing: 'border-box',
+};
+
+const labelStyle = {
+  fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2,
+  color: GOLD, display: 'block', marginBottom: 6,
+};
+
 export default function Admin() {
   const [rezervasyonlar, setRezervasyonlar] = useState([]);
+  const [galeri, setGaleri] = useState([]);
+  const [paketler, setPaketler] = useState([]);
+  const [ayarForm, setAyarForm] = useState({});
   const [sifre, setSifre] = useState('');
-  const[sifreGoster, setSifreGoster] = useState(false);
+  const [sifreGoster, setSifreGoster] = useState(false);
   const [girisYapildi, setGirisYapildi] = useState(false);
+  const [aktifSekme, setAktifSekme] = useState('rezervasyonlar');
+  const [yukleniyor, setYukleniyor] = useState(false);
+  const [duzenForm, setDuzenForm] = useState(null);
+  const [ayarKaydedildi, setAyarKaydedildi] = useState(false);
+  const dosyaRef = useRef();
 
-  const ADMIN_SIFRE = process.env.REACT_APP_ADMIN_SIFRE; 
+  const ADMIN_SIFRE = process.env.REACT_APP_ADMIN_SIFRE;
 
   const giris = () => {
     if (sifre === ADMIN_SIFRE) setGirisYapildi(true);
@@ -19,7 +38,12 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    if (girisYapildi) fetchRezervasyonlar();
+    if (girisYapildi) {
+      fetchRezervasyonlar();
+      fetchGaleri();
+      fetchPaketler();
+      fetchAyarlar();
+    }
   }, [girisYapildi]);
 
   const fetchRezervasyonlar = async () => {
@@ -27,47 +51,132 @@ export default function Admin() {
     setRezervasyonlar(data || []);
   };
 
+  const fetchGaleri = async () => {
+    const { data } = await supabase.from('galeri').select('*').order('created_at', { ascending: true });
+    setGaleri(data || []);
+  };
+
+  const fetchPaketler = async () => {
+    const { data } = await supabase.from('paketler').select('*').order('sira');
+    setPaketler(data || []);
+  };
+
+  const fetchAyarlar = async () => {
+    const { data } = await supabase.from('site_ayarlari').select('*');
+    if (data) {
+      const map = {};
+      data.forEach(r => { map[r.anahtar] = r.deger; });
+      setAyarForm(map);
+    }
+  };
+
+  // ── Rezervasyon işlemleri ──
   const durumGuncelle = async (id, durum) => {
     await supabase.from('rezervasyonlar').update({ durum }).eq('id', id);
     fetchRezervasyonlar();
   };
-  const sil = async (id) => {
+
+  const rezervasyonSil = async (id) => {
     if (window.confirm('Bu rezervasyonu silmek istediğinizden emin misiniz?')) {
       await supabase.from('rezervasyonlar').delete().eq('id', id);
       fetchRezervasyonlar();
     }
   };
+
   const onRezervasyonYap = async (id, mevcutDurum) => {
     if (mevcutDurum === 'Ön Rezervasyon') {
-      // Geri al
-      await supabase.from('rezervasyonlar')
-        .update({on_rezervasyon: false, durum: 'Beklemede'})
-        .eq('id', id);
+      await supabase.from('rezervasyonlar').update({ on_rezervasyon: false, durum: 'Beklemede' }).eq('id', id);
     } else {
-      // Ön rezervasyon yap
-      await supabase.from('rezervasyonlar')
-        .update({on_rezervasyon: true, durum: 'Ön Rezervasyon'})
-        .eq('id', id);
+      await supabase.from('rezervasyonlar').update({ on_rezervasyon: true, durum: 'Ön Rezervasyon' }).eq('id', id);
     }
     fetchRezervasyonlar();
   };
 
+  // ── Galeri işlemleri ──
+  const fotoYukle = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    setYukleniyor(true);
+    for (const file of files) {
+      const uzanti = file.name.split('.').pop();
+      const dosyaAdi = `foto-${Date.now()}-${Math.random().toString(36).slice(2)}.${uzanti}`;
+      const { error } = await supabase.storage.from('galeri').upload(dosyaAdi, file);
+      if (!error) {
+        const { data: urlData } = supabase.storage.from('galeri').getPublicUrl(dosyaAdi);
+        await supabase.from('galeri').insert({ url: urlData.publicUrl });
+      }
+    }
+    setYukleniyor(false);
+    dosyaRef.current.value = '';
+    fetchGaleri();
+  };
+
+  const fotoSil = async (id, url) => {
+    if (!window.confirm('Bu fotoğrafı silmek istediğinizden emin misiniz?')) return;
+    const dosyaAdi = url.split('/').pop();
+    await supabase.storage.from('galeri').remove([dosyaAdi]);
+    await supabase.from('galeri').delete().eq('id', id);
+    fetchGaleri();
+  };
+
+  // ── Paket işlemleri ──
+  const duzenlemeyiBaslat = (paket) => {
+    setDuzenForm({ ...paket, features: [...paket.features] });
+  };
+
+  const paketKaydet = async () => {
+    const temizFeatures = duzenForm.features.filter(f => f.trim() !== '');
+    await supabase.from('paketler').update({
+      name: duzenForm.name,
+      capacity: duzenForm.capacity,
+      price: duzenForm.price,
+      features: temizFeatures,
+      featured: duzenForm.featured,
+    }).eq('id', duzenForm.id);
+    setDuzenForm(null);
+    fetchPaketler();
+  };
+
+  const ozellikEkle = () => setDuzenForm(f => ({ ...f, features: [...f.features, ''] }));
+  const ozellikSil = (i) => setDuzenForm(f => ({ ...f, features: f.features.filter((_, idx) => idx !== i) }));
+  const ozellikDegistir = (i, val) => setDuzenForm(f => ({ ...f, features: f.features.map((feat, idx) => idx === i ? val : feat) }));
+
+  // ── Ayar işlemleri ──
+  const ayarDegistir = (key, val) => setAyarForm(f => ({ ...f, [key]: val }));
+
+  const ayarlariKaydet = async () => {
+    for (const [anahtar, deger] of Object.entries(ayarForm)) {
+      await supabase.from('site_ayarlari').upsert({ anahtar, deger });
+    }
+    setAyarKaydedildi(true);
+    setTimeout(() => setAyarKaydedildi(false), 2500);
+  };
+
+  // ── İstatistikler ──
+  const istatistik = {
+    toplam: rezervasyonlar.length,
+    beklemede: rezervasyonlar.filter(r => r.durum === 'Beklemede' || r.durum === 'Ön Rezervasyon').length,
+    onaylandi: rezervasyonlar.filter(r => r.durum === 'Onaylandı').length,
+    reddedildi: rezervasyonlar.filter(r => r.durum === 'Reddedildi').length,
+  };
+
+  // ── Giriş ekranı ──
   if (!girisYapildi) return (
     <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: CREAM }}>
-      <div style={{ textAlign: 'center', padding: 48, background: '#fff', boxShadow: '0 4px 20px #0001' }}>
+      <div style={{ textAlign: 'center', padding: 48, background: '#fff', boxShadow: '0 4px 20px #0001', minWidth: 320 }}>
         <h2 style={{ fontFamily: "'Cinzel', serif", color: DARK, marginBottom: 24 }}>Admin Girişi</h2>
-        <input 
-          type={sifreGoster ? "text" : "password"}
-           placeholder="Şifre" 
-           value={sifre} 
+        <input
+          type={sifreGoster ? 'text' : 'password'}
+          placeholder="Şifre"
+          value={sifre}
           onChange={e => setSifre(e.target.value)}
-          onKeyDown={e => { if(e.key === 'Enter') giris(); }}
-          style={{ padding: '12px 20px', border: `1px solid ${GOLD}`, outline: 'none', marginBottom: 16, display: 'block', width: '100%', fontSize: 16 }}
-         />
+          onKeyDown={e => { if (e.key === 'Enter') giris(); }}
+          style={{ padding: '12px 20px', border: `1px solid ${GOLD}`, outline: 'none', marginBottom: 16, display: 'block', width: '100%', fontSize: 16, boxSizing: 'border-box' }}
+        />
         <button onClick={() => setSifreGoster(!sifreGoster)}
-         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: GOLD, marginBottom: 16 }}>
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: GOLD, marginBottom: 16 }}>
           {sifreGoster ? 'Gizle' : 'Şifreyi Göster'}
-          </button>
+        </button>
         <button onClick={giris}
           style={{ width: '100%', padding: 14, background: GOLD, border: 'none', color: '#fff', fontFamily: "'Cinzel', serif", fontSize: 13, letterSpacing: 3, cursor: 'pointer' }}>
           GİRİŞ
@@ -77,48 +186,309 @@ export default function Admin() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: CREAM, padding: 48 }}>
-      <h1 style={{ fontFamily: "'Cinzel', serif", color: GOLD, marginBottom: 32 }}>Rezervasyonlar</h1>
-      <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
-        <thead>
-          <tr style={{ background: DARK, color: '#fff' }}>
-            {['Ad Soyad', 'Telefon', 'Tarih', 'Paket', 'Not', 'Durum', 'İşlem'].map(h => (
-              <th key={h} style={{ padding: '12px 16px', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 2, textAlign: 'left' }}>{h}</th>
+    <div style={{ minHeight: '100vh', background: CREAM }}>
+      <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cormorant+Garamond:wght@400;600&display=swap" rel="stylesheet" />
+
+      {/* Header */}
+      <div style={{ background: DARK, padding: '24px 48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h1 style={{ fontFamily: "'Cinzel', serif", color: GOLD, margin: 0, fontSize: 20, letterSpacing: 3 }}>
+          HÜRREM ROYAL — Admin
+        </h1>
+        <button onClick={() => setGirisYapildi(false)}
+          style={{ background: 'none', border: `1px solid ${GOLD}44`, color: GOLD, padding: '8px 20px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 2 }}>
+          ÇIKIŞ
+        </button>
+      </div>
+
+      {/* Sekmeler */}
+      <div style={{ background: '#fff', borderBottom: `1px solid ${GOLD}33`, display: 'flex', padding: '0 48px', overflowX: 'auto' }}>
+        {[['rezervasyonlar', 'Rezervasyonlar'], ['galeri', 'Galeri'], ['paketler', 'Paketler'], ['ayarlar', 'Site Ayarları']].map(([key, label]) => (
+          <button key={key} onClick={() => setAktifSekme(key)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+              padding: '16px 24px', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 2,
+              color: aktifSekme === key ? GOLD : DARK,
+              borderBottom: aktifSekme === key ? `2px solid ${GOLD}` : '2px solid transparent',
+              marginBottom: -1,
+            }}>
+            {label.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ padding: 48 }}>
+
+        {/* ── Rezervasyonlar ── */}
+        {aktifSekme === 'rezervasyonlar' && (
+          <div>
+            {/* İstatistik kartları */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16, marginBottom: 40 }}>
+              {[
+                { label: 'Toplam', value: istatistik.toplam, renk: GOLD, bg: '#fff' },
+                { label: 'Beklemede', value: istatistik.beklemede, renk: '#856404', bg: '#fff3cd' },
+                { label: 'Onaylandı', value: istatistik.onaylandi, renk: '#155724', bg: '#d4edda' },
+                { label: 'Reddedildi', value: istatistik.reddedildi, renk: '#721c24', bg: '#f8d7da' },
+              ].map(({ label, value, renk, bg }) => (
+                <div key={label} style={{ background: bg, border: `1px solid ${renk}33`, borderRadius: 8, padding: '20px 24px', textAlign: 'center' }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: 32, color: renk, fontWeight: 600 }}>{value}</div>
+                  <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: renk, marginTop: 4 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', minWidth: 800 }}>
+                <thead>
+                  <tr style={{ background: DARK, color: '#fff' }}>
+                    {['Ad Soyad', 'Telefon', 'Tarih', 'Paket', 'Not', 'Durum', 'İşlem'].map(h => (
+                      <th key={h} style={{ padding: '12px 16px', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 2, textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rezervasyonlar.map((r, i) => (
+                    <tr key={r.id} style={{ borderBottom: `1px solid ${GOLD}33`, background: i % 2 === 0 ? '#fff' : '#fdf6e3' }}>
+                      <td style={{ padding: '12px 16px' }}>{r.ad_soyad}</td>
+                      <td style={{ padding: '12px 16px' }}>{r.telefon}</td>
+                      <td style={{ padding: '12px 16px' }}>{r.tarih}</td>
+                      <td style={{ padding: '12px 16px' }}>{r.paket}</td>
+                      <td style={{ padding: '12px 16px' }}>{r.not}</td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <span style={{
+                          padding: '4px 12px', borderRadius: 20, fontSize: 12, whiteSpace: 'nowrap',
+                          background: r.durum === 'Onaylandı' ? '#d4edda' : r.durum === 'Reddedildi' ? '#f8d7da' : '#fff3cd',
+                          color: r.durum === 'Onaylandı' ? '#155724' : r.durum === 'Reddedildi' ? '#721c24' : '#856404',
+                        }}>
+                          {r.durum}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <button onClick={() => durumGuncelle(r.id, 'Onaylandı')}
+                            style={{ padding: '6px 10px', background: '#28a745', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Onayla</button>
+                          <button onClick={() => durumGuncelle(r.id, 'Reddedildi')}
+                            style={{ padding: '6px 10px', background: '#dc3545', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Reddet</button>
+                          <button onClick={() => onRezervasyonYap(r.id, r.durum)}
+                            style={{ padding: '6px 10px', background: r.durum === 'Ön Rezervasyon' ? '#888' : GOLD, border: 'none', color: DARK, cursor: 'pointer', borderRadius: 4, fontSize: 11, fontWeight: 'bold' }}>
+                            {r.durum === 'Ön Rezervasyon' ? 'Geri Al' : 'Ön Rez'}
+                          </button>
+                          {r.durum === 'Reddedildi' && (
+                            <button onClick={() => rezervasyonSil(r.id)}
+                              style={{ padding: '6px 10px', background: '#dc3545', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Sil</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {rezervasyonlar.length === 0 && (
+                    <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#999', fontFamily: "'Cormorant Garamond', serif", fontSize: 16 }}>Henüz rezervasyon yok.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── Galeri ── */}
+        {aktifSekme === 'galeri' && (
+          <div>
+            <div style={{
+              background: '#fff', border: `2px dashed ${GOLD}66`, borderRadius: 8,
+              padding: 40, textAlign: 'center', marginBottom: 40, cursor: 'pointer',
+            }} onClick={() => dosyaRef.current.click()}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📷</div>
+              <p style={{ fontFamily: "'Cinzel', serif", color: DARK, fontSize: 13, letterSpacing: 2, marginBottom: 8 }}>FOTOĞRAF YÜKLE</p>
+              <p style={{ fontFamily: "'Cormorant Garamond', serif", color: '#999', fontSize: 15, marginBottom: 16 }}>
+                Tıkla veya birden fazla dosya seç · JPG, PNG, WEBP
+              </p>
+              <input ref={dosyaRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={fotoYukle} />
+              <button onClick={e => { e.stopPropagation(); dosyaRef.current.click(); }} disabled={yukleniyor}
+                style={{ background: yukleniyor ? '#ccc' : GOLD, border: 'none', color: DARK, padding: '12px 32px', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 3, cursor: yukleniyor ? 'wait' : 'pointer' }}>
+                {yukleniyor ? 'YÜKLENİYOR...' : 'DOSYA SEÇ'}
+              </button>
+            </div>
+            <p style={{ fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 3, color: GOLD, marginBottom: 20 }}>
+              GALERİDEKİ FOTOĞRAFLAR ({galeri.length})
+            </p>
+            {galeri.length === 0 ? (
+              <p style={{ fontFamily: "'Cormorant Garamond', serif", color: '#999', fontSize: 16 }}>Henüz fotoğraf yok.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+                {galeri.map(foto => (
+                  <div key={foto.id} style={{ position: 'relative', borderRadius: 6, overflow: 'hidden', background: '#fff', boxShadow: '0 2px 8px #0001' }}>
+                    <img src={foto.url} alt="" style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block' }} />
+                    <button onClick={() => fotoSil(foto.id, foto.url)}
+                      style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(220,53,69,0.9)', border: 'none', color: '#fff', width: 28, height: 28, borderRadius: '50%', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Paketler ── */}
+        {aktifSekme === 'paketler' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24, maxWidth: 800 }}>
+            <p style={{ fontFamily: "'Cormorant Garamond', serif", color: '#777', fontSize: 15, marginBottom: 8 }}>
+              Paket adı, kapasite, fiyat ve özellikleri düzenleyebilirsiniz. Değişiklikler anasayfaya anında yansır.
+            </p>
+            {paketler.map(paket => (
+              <div key={paket.id} style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ background: DARK, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 16, letterSpacing: 2 }}>{paket.name}</span>
+                    {paket.featured && (
+                      <span style={{ background: GOLD, color: DARK, padding: '2px 10px', fontSize: 10, fontFamily: "'Cinzel', serif", letterSpacing: 2, borderRadius: 2 }}>EN POPÜLER</span>
+                    )}
+                  </div>
+                  <button onClick={() => duzenForm?.id === paket.id ? setDuzenForm(null) : duzenlemeyiBaslat(paket)}
+                    style={{ background: duzenForm?.id === paket.id ? '#555' : GOLD, border: 'none', color: duzenForm?.id === paket.id ? '#fff' : DARK, padding: '8px 20px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2 }}>
+                    {duzenForm?.id === paket.id ? 'İPTAL' : 'DÜZENLE'}
+                  </button>
+                </div>
+
+                {duzenForm?.id === paket.id ? (
+                  <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div>
+                        <label style={labelStyle}>PAKET ADI</label>
+                        <input value={duzenForm.name} onChange={e => setDuzenForm(f => ({ ...f, name: e.target.value }))} style={fieldStyle} />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>KAPASİTE</label>
+                        <input value={duzenForm.capacity} onChange={e => setDuzenForm(f => ({ ...f, capacity: e.target.value }))} style={fieldStyle} placeholder="örn: 200–400 Kişi" />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div>
+                        <label style={labelStyle}>FİYAT</label>
+                        <input value={duzenForm.price} onChange={e => setDuzenForm(f => ({ ...f, price: e.target.value }))} style={fieldStyle} placeholder="örn: ₺350.000" />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 24 }}>
+                        <input type="checkbox" id={`featured-${paket.id}`} checked={duzenForm.featured} onChange={e => setDuzenForm(f => ({ ...f, featured: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer', accentColor: GOLD }} />
+                        <label htmlFor={`featured-${paket.id}`} style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: DARK, cursor: 'pointer' }}>"En Popüler" rozeti göster</label>
+                      </div>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>ÖZELLİKLER</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {duzenForm.features.map((feat, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 8 }}>
+                            <input value={feat} onChange={e => ozellikDegistir(i, e.target.value)} style={{ ...fieldStyle, flex: 1 }} placeholder={`Özellik ${i + 1}`} />
+                            <button onClick={() => ozellikSil(i)} style={{ background: '#dc3545', border: 'none', color: '#fff', width: 38, cursor: 'pointer', borderRadius: 4, fontSize: 18, flexShrink: 0 }}>×</button>
+                          </div>
+                        ))}
+                        <button onClick={ozellikEkle} style={{ background: 'none', border: `1px dashed ${GOLD}`, color: GOLD, padding: '10px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2 }}>
+                          + ÖZELLİK EKLE
+                        </button>
+                      </div>
+                    </div>
+                    <button onClick={paketKaydet} style={{ background: GOLD, border: 'none', color: DARK, padding: '14px', cursor: 'pointer', alignSelf: 'flex-start', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 3, minWidth: 160 }}>
+                      KAYDET
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ padding: '16px 24px', display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+                    <div><span style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: '#999', letterSpacing: 1 }}>FİYAT </span><span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: DARK, fontWeight: 600 }}>{paket.price}</span></div>
+                    <div><span style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: '#999', letterSpacing: 1 }}>KAPASİTE </span><span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: DARK }}>{paket.capacity}</span></div>
+                    <div><span style={{ fontFamily: "'Cinzel', serif", fontSize: 10, color: '#999', letterSpacing: 1 }}>ÖZELLİKLER </span><span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: '#666' }}>{paket.features?.join(' · ')}</span></div>
+                  </div>
+                )}
+              </div>
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rezervasyonlar.map((r, i) => (
-            <tr key={r.id} style={{ borderBottom: `1px solid ${GOLD}33`, background: i % 2 === 0 ? '#fff' : '#fdf6e3' }}>
-              <td style={{ padding: '12px 16px' }}>{r.ad_soyad}</td>
-              <td style={{ padding: '12px 16px' }}>{r.telefon}</td>
-              <td style={{ padding: '12px 16px' }}>{r.tarih}</td>
-              <td style={{ padding: '12px 16px' }}>{r.paket}</td>
-              <td style={{ padding: '12px 16px' }}>{r.not}</td>
-              <td style={{ padding: '12px 16px' }}>
-                <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12,
-                  background: r.durum === 'Onaylandı' ? '#d4edda' : r.durum === 'Reddedildi' ? '#f8d7da' : '#fff3cd',
-                  color: r.durum === 'Onaylandı' ? '#155724' : r.durum === 'Reddedildi' ? '#721c24' : '#856404' }}>
-                  {r.durum}
+          </div>
+        )}
+
+        {/* ── Site Ayarları ── */}
+        {aktifSekme === 'ayarlar' && (
+          <div style={{ maxWidth: 700, display: 'flex', flexDirection: 'column', gap: 40 }}>
+
+            {/* İletişim */}
+            <div style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ background: DARK, padding: '14px 24px' }}>
+                <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 12, letterSpacing: 3 }}>İLETİŞİM BİLGİLERİ</span>
+              </div>
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>TELEFON</label>
+                  <input value={ayarForm.telefon || ''} onChange={e => ayarDegistir('telefon', e.target.value)} style={fieldStyle} placeholder="0344 000 00 00" />
+                </div>
+                <div>
+                  <label style={labelStyle}>WHATSAPP NUMARASI (ülke kodu ile, örn: 905340000000)</label>
+                  <input value={ayarForm.whatsapp || ''} onChange={e => ayarDegistir('whatsapp', e.target.value)} style={fieldStyle} placeholder="905340000000" />
+                </div>
+                <div>
+                  <label style={labelStyle}>ADRES</label>
+                  <input value={ayarForm.adres || ''} onChange={e => ayarDegistir('adres', e.target.value)} style={fieldStyle} placeholder="Kahramanmaraş, Türkiye" />
+                </div>
+                <div>
+                  <label style={labelStyle}>E-POSTA</label>
+                  <input value={ayarForm.email || ''} onChange={e => ayarDegistir('email', e.target.value)} style={fieldStyle} placeholder="info@hurremroyal.com" />
+                </div>
+              </div>
+            </div>
+
+            {/* Ön Rezervasyon */}
+            <div style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ background: DARK, padding: '14px 24px' }}>
+                <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 12, letterSpacing: 3 }}>ÖN REZERVASYON BİLGİLERİ</span>
+              </div>
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>KAPORA TUTARI</label>
+                  <input value={ayarForm.kapora || ''} onChange={e => ayarDegistir('kapora', e.target.value)} style={fieldStyle} placeholder="₺10.000" />
+                </div>
+                <div>
+                  <label style={labelStyle}>IBAN</label>
+                  <input value={ayarForm.iban || ''} onChange={e => ayarDegistir('iban', e.target.value)} style={fieldStyle} placeholder="TR00 0000 0000 0000 0000 0000 00" />
+                </div>
+              </div>
+            </div>
+
+            {/* Hero */}
+            <div style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ background: DARK, padding: '14px 24px' }}>
+                <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 12, letterSpacing: 3 }}>ANA SAYFA — HERO BÖLÜMÜ</span>
+              </div>
+              <div style={{ padding: 24 }}>
+                <label style={labelStyle}>SLOGAN</label>
+                <input value={ayarForm.hero_slogan || ''} onChange={e => ayarDegistir('hero_slogan', e.target.value)} style={fieldStyle} placeholder="En özel anınız, en güzel mekânda" />
+              </div>
+            </div>
+
+            {/* Salon */}
+            <div style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, overflow: 'hidden' }}>
+              <div style={{ background: DARK, padding: '14px 24px' }}>
+                <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 12, letterSpacing: 3 }}>SALON — HAKKIMIZDA METNİ</span>
+              </div>
+              <div style={{ padding: 24 }}>
+                <label style={labelStyle}>METİN</label>
+                <textarea
+                  value={ayarForm.salon_metin || ''}
+                  onChange={e => ayarDegistir('salon_metin', e.target.value)}
+                  rows={4}
+                  style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.7 }}
+                  placeholder="Kahramanmaraş'ın kalbinde..."
+                />
+              </div>
+            </div>
+
+            {/* Kaydet butonu */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <button onClick={ayarlariKaydet}
+                style={{ background: GOLD, border: 'none', color: DARK, padding: '16px 48px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 12, letterSpacing: 3 }}>
+                KAYDET
+              </button>
+              {ayarKaydedildi && (
+                <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: '#155724' }}>
+                  ✓ Ayarlar kaydedildi
                 </span>
-                </td>
-              <td style={{ padding: '12px 16px', display: 'flex', gap: 8 }}>
-                <button onClick={() => durumGuncelle(r.id, 'Onaylandı')}
-                  style={{ padding: '6px 12px', background: '#28a745', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>Onayla</button>
-                <button onClick={() => durumGuncelle(r.id, 'Reddedildi')}
-                  style={{ padding: '6px 12px', background: '#dc3545', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 12 }}>Reddet</button>
-                <button onClick={() => onRezervasyonYap(r.id, r.durum)}
-                  style={{padding: '6px 12px', background: r.durum === 'Ön Rezervasyon' ? '#888' : '#C9A84C', border: 'none', color: DARK, cursor:'pointer', borderRadius:4, fontSize:12, fontWeight:'bold'}}>
-                 {r.durum === 'Ön Rezervasyon' ? 'Geri Al' : 'Ön Rez'}  
-                </button>
-                {r.durum === 'Reddedildi' && (
-                 <button onClick={() => sil(r.id)}
-                style={{padding: '6px 12px', background: '#dc3545', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 12}}>
-                Sil
-                 </button>
               )}
-              </td>
-            </tr>
-          ))}
-         </tbody>
-      </t
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
