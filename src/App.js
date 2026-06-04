@@ -190,9 +190,9 @@ function PaketDetayModal({ pkg, onKapat, onSec }) {
           style={{ position: 'absolute', top: 14, right: 18, background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', zIndex: 10, lineHeight: 1 }}>×</button>
 
         {images.length > 0 && (
-          <div style={{ flex: '1 1 300px', minHeight: 320, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ flex: '1 1 300px', minHeight: 320, position: 'relative', overflow: 'hidden', background: '#0d0800' }}>
             <img src={images[aktifGorsel]} alt={pkg.name}
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }} />
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
             {images.length > 1 && (
               <>
                 <button onClick={() => setAktifGorsel(i => (i - 1 + images.length) % images.length)}
