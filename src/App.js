@@ -102,8 +102,8 @@ function Hero({ onRezervasyon, slogan, gorsel }) {
   return (
     <section className="hero-section" style={{ position: 'relative', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: DARK }}>
       <img src={gorsel || "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1400&q=80"} alt="salon"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 30%', opacity: 0.65 }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.5) 100%)' }} />
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 70%', opacity: 0.7 }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} />
       <style>{`
         .hero-section { min-height: 500px; }
         @media (max-width: 600px) {
