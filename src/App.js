@@ -102,7 +102,8 @@ function Hero({ onRezervasyon, slogan }) {
   return (
     <section style={{ position: 'relative', height: '100vh', minHeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: DARK }}>
       <img src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=1400&q=80" alt="salon"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.45 }} />
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.55 }} />
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.55) 100%)' }} />
       <div style={{ position: 'relative', textAlign: 'center', color: '#fff', padding: '0 24px' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
           <div style={{ display: 'inline-block', border: `1px solid ${GOLD}`, padding: '4px 20px', marginBottom: 24, fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 4, color: GOLD }}>
