@@ -6,7 +6,7 @@ import { supabase } from './supabase';
 const GOLD = "#C9A84C";
 const DARK = "#2c1f0e";
 
-export default function Takvim({ onTarihSec }) {
+export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler = [] }) {
   const [rezervasyonlar, setRezervasyonlar] = useState([]);
   const [seciliTarih, setSeciliTarih] = useState(null);
 
@@ -35,9 +35,9 @@ export default function Takvim({ onTarihSec }) {
 
   const handleTarih = (date) => {
     if (tarihDurumu(date) === 'dolu') return;
-    setSeciliTarih(date);
-
-    if (onTarihSec) onTarihSec(date.toISOString().split('T')[0]);
+    const dateStr = date.toISOString().split('T')[0];
+    if (!cokluSecim) setSeciliTarih(date);
+    if (onTarihSec) onTarihSec(dateStr);
   };
 
   return (
@@ -109,6 +109,12 @@ export default function Takvim({ onTarihSec }) {
         .bos {
           background: #ccffcc !important;
         }
+        .secili {
+          background: ${GOLD} !important;
+          color: ${DARK} !important;
+          font-weight: bold !important;
+          border-radius: 50% !important;
+        }
 
         /* Mobil için ek küçültme */
         @media (max-width: 400px) {
@@ -134,6 +140,10 @@ export default function Takvim({ onTarihSec }) {
           const durum = tarihDurumu(date);
           if (durum === 'dolu') return 'dolu';
           if (durum === 'on_rezervasyon') return 'on-rezervasyon';
+          const offset = date.getTimezoneOffset();
+          const localDate = new Date(date.getTime() - offset * 60 * 1000);
+          const tarihStr = localDate.toISOString().split('T')[0];
+          if (secilenTarihler.includes(tarihStr)) return 'secili';
           const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
           if (date >= bugun) return 'bos';
           return null;
@@ -177,7 +187,7 @@ export default function Takvim({ onTarihSec }) {
         ))}
       </div>
 
-      {seciliTarih && (
+      {seciliTarih && !cokluSecim && (
         <p style={{
           marginTop: 14,
           fontFamily: "'Cormorant Garamond', serif",

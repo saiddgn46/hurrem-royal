@@ -31,7 +31,7 @@ export default function Admin() {
   const [ayarKaydedildi, setAyarKaydedildi] = useState(false);
   const [aktifFiltre, setAktifFiltre] = useState('Toplam');
   const [oturumAcikBirak, setOturumAcikBirak] = useState(false);
-  const [kapatilacakTarih, setKapatilacakTarih] = useState('');
+  const [kapatilacakTarihler, setKapatilacakTarihler] = useState([]);
   const [takvimKey, setTakvimKey] = useState(0);
   const [paketGorselleri, setPaketGorselleri] = useState({});
   const [etkinlikler, setEtkinlikler] = useState([]);
@@ -97,17 +97,23 @@ export default function Admin() {
   };
 
   // ── Tarih engelleme ──
+  const tarihToggle = (tarihStr) => {
+    setKapatilacakTarihler(prev =>
+      prev.includes(tarihStr) ? prev.filter(t => t !== tarihStr) : [...prev, tarihStr]
+    );
+  };
+
   const tarihKapat = async () => {
-    if (!kapatilacakTarih) return;
-    const { error } = await supabase.from('rezervasyonlar').insert({
-      tarih: kapatilacakTarih, ad_soyad: '[KAPALI]',
-      telefon: '-', durum: 'Onaylandı', not: 'Admin tarafından kapatıldı',
-    });
-    if (!error) {
-      setKapatilacakTarih('');
-      setTakvimKey(k => k + 1);
-      fetchRezervasyonlar();
-    } else alert('Bu tarih zaten dolu veya kapalı.');
+    if (!kapatilacakTarihler.length) return;
+    for (const tarih of kapatilacakTarihler) {
+      await supabase.from('rezervasyonlar').insert({
+        tarih, ad_soyad: '[KAPALI]',
+        telefon: '-', durum: 'Onaylandı', not: 'Admin tarafından kapatıldı',
+      });
+    }
+    setKapatilacakTarihler([]);
+    setTakvimKey(k => k + 1);
+    fetchRezervasyonlar();
   };
 
   const tarihAc = async (id) => {
@@ -119,6 +125,7 @@ export default function Admin() {
   // ── Rezervasyon işlemleri ──
   const durumGuncelle = async (id, durum) => {
     await supabase.from('rezervasyonlar').update({ durum }).eq('id', id);
+    setTakvimKey(k => k + 1);
     fetchRezervasyonlar();
   };
 
@@ -135,6 +142,7 @@ export default function Admin() {
     } else {
       await supabase.from('rezervasyonlar').update({ on_rezervasyon: true, durum: 'Ön Rezervasyon' }).eq('id', id);
     }
+    setTakvimKey(k => k + 1);
     fetchRezervasyonlar();
   };
 
@@ -378,16 +386,22 @@ export default function Admin() {
                   Kapatmak istediğiniz tarihe tıklayın, ardından "Kapat" butonuna basın.
                 </p>
                 <div style={{ border: `1px solid ${GOLD}33`, padding: 16, marginBottom: 16, background: '#fffdf7' }}>
-                  <Takvim key={takvimKey} onTarihSec={setKapatilacakTarih} />
+                  <Takvim key={takvimKey} onTarihSec={tarihToggle} cokluSecim={true} secilenTarihler={kapatilacakTarihler} />
                 </div>
-                {kapatilacakTarih && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-                    <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: DARK }}>
-                      Seçilen tarih: <strong>{kapatilacakTarih}</strong>
-                    </span>
+                {kapatilacakTarihler.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                      {kapatilacakTarihler.map(t => (
+                        <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GOLD + '33', border: `1px solid ${GOLD}`, borderRadius: 20, padding: '4px 12px 4px 14px' }}>
+                          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: DARK }}>{t}</span>
+                          <button onClick={() => setKapatilacakTarihler(prev => prev.filter(x => x !== t))}
+                            style={{ background: 'none', border: 'none', color: DARK, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                        </div>
+                      ))}
+                    </div>
                     <button onClick={tarihKapat}
                       style={{ background: '#dc3545', border: 'none', color: '#fff', padding: '9px 22px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, borderRadius: 4 }}>
-                      KAPAT
+                      {kapatilacakTarihler.length} TARİHİ KAPAT
                     </button>
                   </div>
                 )}
