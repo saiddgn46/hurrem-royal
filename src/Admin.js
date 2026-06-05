@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabase';
+import Takvim from './Takvim';
 
 const GOLD = "#C9A84C";
 const DARK = "#2c1f0e";
@@ -31,6 +32,7 @@ export default function Admin() {
   const [aktifFiltre, setAktifFiltre] = useState('Toplam');
   const [oturumAcikBirak, setOturumAcikBirak] = useState(false);
   const [kapatilacakTarih, setKapatilacakTarih] = useState('');
+  const [takvimKey, setTakvimKey] = useState(0);
   const [paketGorselleri, setPaketGorselleri] = useState({});
   const [etkinlikler, setEtkinlikler] = useState([]);
   const [etkinlikForm, setEtkinlikForm] = useState({ baslik: '', tarih: '', aciklama: '' });
@@ -101,12 +103,16 @@ export default function Admin() {
       tarih: kapatilacakTarih, ad_soyad: '[KAPALI]',
       telefon: '-', durum: 'Onaylandı', not: 'Admin tarafından kapatıldı',
     });
-    if (!error) { setKapatilacakTarih(''); fetchRezervasyonlar(); }
-    else alert('Bu tarih zaten dolu veya kapalı.');
+    if (!error) {
+      setKapatilacakTarih('');
+      setTakvimKey(k => k + 1);
+      fetchRezervasyonlar();
+    } else alert('Bu tarih zaten dolu veya kapalı.');
   };
 
   const tarihAc = async (id) => {
     await supabase.from('rezervasyonlar').delete().eq('id', id);
+    setTakvimKey(k => k + 1);
     fetchRezervasyonlar();
   };
 
@@ -364,28 +370,42 @@ export default function Admin() {
           <div>
             {/* Tarih Yönetimi */}
             <div style={{ background: '#fff', border: `1px solid ${GOLD}33`, borderRadius: 8, overflow: 'hidden', marginBottom: 32 }}>
-              <div style={{ background: DARK, padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ background: DARK, padding: '12px 24px' }}>
                 <span style={{ fontFamily: "'Cinzel', serif", color: GOLD, fontSize: 11, letterSpacing: 3 }}>TARİH YÖNETİMİ</span>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <input type="date" value={kapatilacakTarih} onChange={e => setKapatilacakTarih(e.target.value)}
-                    style={{ padding: '7px 12px', border: `1px solid ${GOLD}66`, background: '#fff', fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: DARK, outline: 'none' }} />
-                  <button onClick={tarihKapat} disabled={!kapatilacakTarih}
-                    style={{ background: kapatilacakTarih ? '#dc3545' : '#ccc', border: 'none', color: '#fff', padding: '8px 18px', cursor: kapatilacakTarih ? 'pointer' : 'default', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, borderRadius: 4 }}>
-                    KAPAT
-                  </button>
-                </div>
               </div>
-              {rezervasyonlar.filter(r => r.ad_soyad === '[KAPALI]').length > 0 && (
-                <div style={{ padding: '12px 24px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {rezervasyonlar.filter(r => r.ad_soyad === '[KAPALI]').map(r => (
-                    <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8d7da', borderRadius: 20, padding: '4px 12px 4px 14px' }}>
-                      <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: '#721c24' }}>{r.tarih}</span>
-                      <button onClick={() => tarihAc(r.id)}
-                        style={{ background: 'none', border: 'none', color: '#721c24', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-                    </div>
-                  ))}
+              <div style={{ padding: 24 }}>
+                <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: '#777', marginBottom: 16 }}>
+                  Kapatmak istediğiniz tarihe tıklayın, ardından "Kapat" butonuna basın.
+                </p>
+                <div style={{ border: `1px solid ${GOLD}33`, padding: 16, marginBottom: 16, background: '#fffdf7' }}>
+                  <Takvim key={takvimKey} onTarihSec={setKapatilacakTarih} />
                 </div>
-              )}
+                {kapatilacakTarih && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: DARK }}>
+                      Seçilen tarih: <strong>{kapatilacakTarih}</strong>
+                    </span>
+                    <button onClick={tarihKapat}
+                      style={{ background: '#dc3545', border: 'none', color: '#fff', padding: '9px 22px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, borderRadius: 4 }}>
+                      KAPAT
+                    </button>
+                  </div>
+                )}
+                {rezervasyonlar.filter(r => r.ad_soyad === '[KAPALI]').length > 0 && (
+                  <div>
+                    <p style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, color: GOLD, marginBottom: 10 }}>KAPALI TARİHLER</p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {rezervasyonlar.filter(r => r.ad_soyad === '[KAPALI]').map(r => (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8d7da', borderRadius: 20, padding: '4px 12px 4px 14px' }}>
+                          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: '#721c24' }}>{r.tarih}</span>
+                          <button onClick={() => tarihAc(r.id)}
+                            style={{ background: 'none', border: 'none', color: '#721c24', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* İstatistik kartları */}
