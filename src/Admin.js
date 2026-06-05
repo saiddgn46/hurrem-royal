@@ -122,6 +122,16 @@ export default function Admin() {
     fetchRezervasyonlar();
   };
 
+  const tarihAcSecili = async (tarihler) => {
+    for (const tarih of tarihler) {
+      const row = rezervasyonlar.find(r => r.ad_soyad === '[KAPALI]' && r.tarih === tarih);
+      if (row) await supabase.from('rezervasyonlar').delete().eq('id', row.id);
+    }
+    setKapatilacakTarihler([]);
+    setTakvimKey(k => k + 1);
+    fetchRezervasyonlar();
+  };
+
   // ── Rezervasyon işlemleri ──
   const durumGuncelle = async (id, durum) => {
     await supabase.from('rezervasyonlar').update({ durum }).eq('id', id);
@@ -388,23 +398,41 @@ export default function Admin() {
                 <div style={{ border: `1px solid ${GOLD}33`, padding: 16, marginBottom: 16, background: '#fffdf7' }}>
                   <Takvim key={takvimKey} onTarihSec={tarihToggle} cokluSecim={true} secilenTarihler={kapatilacakTarihler} />
                 </div>
-                {kapatilacakTarihler.length > 0 && (
-                  <div style={{ marginBottom: 20 }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                      {kapatilacakTarihler.map(t => (
-                        <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, background: GOLD + '33', border: `1px solid ${GOLD}`, borderRadius: 20, padding: '4px 12px 4px 14px' }}>
-                          <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: DARK }}>{t}</span>
-                          <button onClick={() => setKapatilacakTarihler(prev => prev.filter(x => x !== t))}
-                            style={{ background: 'none', border: 'none', color: DARK, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-                        </div>
-                      ))}
+                {kapatilacakTarihler.length > 0 && (() => {
+                  const kapaliSet = new Set(rezervasyonlar.filter(r => r.ad_soyad === '[KAPALI]').map(r => r.tarih));
+                  const acilacaklar = kapatilacakTarihler.filter(t => kapaliSet.has(t));
+                  const kapatilacaklar = kapatilacakTarihler.filter(t => !kapaliSet.has(t));
+                  return (
+                    <div style={{ marginBottom: 20 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                        {kapatilacakTarihler.map(t => {
+                          const isKapali = kapaliSet.has(t);
+                          return (
+                            <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, background: isKapali ? '#f8d7da' : GOLD + '33', border: `1px solid ${isKapali ? '#dc3545' : GOLD}`, borderRadius: 20, padding: '4px 12px 4px 14px' }}>
+                              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: isKapali ? '#721c24' : DARK }}>{t}</span>
+                              <button onClick={() => setKapatilacakTarihler(prev => prev.filter(x => x !== t))}
+                                style={{ background: 'none', border: 'none', color: isKapali ? '#721c24' : DARK, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        {kapatilacaklar.length > 0 && (
+                          <button onClick={tarihKapat}
+                            style={{ background: '#dc3545', border: 'none', color: '#fff', padding: '9px 22px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, borderRadius: 4 }}>
+                            {kapatilacaklar.length} TARİHİ KAPAT
+                          </button>
+                        )}
+                        {acilacaklar.length > 0 && (
+                          <button onClick={() => tarihAcSecili(acilacaklar)}
+                            style={{ background: '#28a745', border: 'none', color: '#fff', padding: '9px 22px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, borderRadius: 4 }}>
+                            {acilacaklar.length} TARİHİ AÇ
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <button onClick={tarihKapat}
-                      style={{ background: '#dc3545', border: 'none', color: '#fff', padding: '9px 22px', cursor: 'pointer', fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, borderRadius: 4 }}>
-                      {kapatilacakTarihler.length} TARİHİ KAPAT
-                    </button>
-                  </div>
-                )}
+                  );
+                })()}
                 {rezervasyonlar.filter(r => r.ad_soyad === '[KAPALI]').length > 0 && (
                   <div>
                     <p style={{ fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: 2, color: GOLD, marginBottom: 10 }}>KAPALI TARİHLER</p>
