@@ -33,9 +33,14 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
     return 'bos';
   };
 
+  const toLocalDateStr = (date) => {
+    const offset = date.getTimezoneOffset();
+    return new Date(date.getTime() - offset * 60 * 1000).toISOString().split('T')[0];
+  };
+
   const handleTarih = (date) => {
     if (tarihDurumu(date) === 'dolu') return;
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = toLocalDateStr(date);
     if (!cokluSecim) setSeciliTarih(date);
     if (onTarihSec) onTarihSec(dateStr);
   };
@@ -113,7 +118,6 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
           background: ${GOLD} !important;
           color: ${DARK} !important;
           font-weight: bold !important;
-          border-radius: 50% !important;
         }
 
         /* Mobil için ek küçültme */
@@ -140,14 +144,13 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
           const durum = tarihDurumu(date);
           if (durum === 'dolu') return 'dolu';
           if (durum === 'on_rezervasyon') return 'on-rezervasyon';
-          const offset = date.getTimezoneOffset();
-          const localDate = new Date(date.getTime() - offset * 60 * 1000);
-          const tarihStr = localDate.toISOString().split('T')[0];
+          const tarihStr = toLocalDateStr(date);
           if (secilenTarihler.includes(tarihStr)) return 'secili';
           const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
           if (date >= bugun) return 'bos';
           return null;
         }}
+
         tileDisabled={({ date, view }) => {
           const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
           if (view === 'month') return tarihDurumu(date) === 'dolu' || date < bugun;
