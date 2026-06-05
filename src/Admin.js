@@ -313,11 +313,12 @@ export default function Admin() {
   };
 
   // ── İstatistikler ──
+  const gercek = rezervasyonlar.filter(r => r.ad_soyad !== '[KAPALI]');
   const istatistik = {
-    toplam: rezervasyonlar.length,
-    beklemede: rezervasyonlar.filter(r => r.durum === 'Beklemede' || r.durum === 'Ön Rezervasyon').length,
-    onaylandi: rezervasyonlar.filter(r => r.durum === 'Onaylandı').length,
-    reddedildi: rezervasyonlar.filter(r => r.durum === 'Reddedildi').length,
+    toplam: gercek.length,
+    beklemede: gercek.filter(r => r.durum === 'Beklemede' || r.durum === 'Ön Rezervasyon').length,
+    onaylandi: gercek.filter(r => r.durum === 'Onaylandı').length,
+    reddedildi: gercek.filter(r => r.durum === 'Reddedildi').length,
   };
 
   // ── Giriş ekranı ──
