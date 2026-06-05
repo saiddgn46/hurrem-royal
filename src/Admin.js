@@ -497,9 +497,11 @@ export default function Admin() {
                     <tr key={r.id} style={{ borderBottom: `1px solid ${GOLD}33`, background: i % 2 === 0 ? '#fff' : '#fdf6e3' }}>
                       {r.ad_soyad === '[KAPALI]' ? (
                         <>
-                          <td colSpan={5} style={{ padding: '12px 16px', fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: '#5a2d82', fontStyle: 'italic' }}>
-                            Admin tarafından kapatıldı
-                          </td>
+                          <td style={{ padding: '12px 16px', fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: '#5a2d82', fontStyle: 'italic' }}>—</td>
+                          <td style={{ padding: '12px 16px' }}>—</td>
+                          <td style={{ padding: '12px 16px', fontFamily: "'Cinzel', serif", fontSize: 13, color: DARK, fontWeight: 600 }}>{r.tarih}</td>
+                          <td style={{ padding: '12px 16px' }}>—</td>
+                          <td style={{ padding: '12px 16px', fontFamily: "'Cormorant Garamond', serif", fontSize: 13, color: '#5a2d82', fontStyle: 'italic' }}>Admin tarafından kapatıldı</td>
                           <td style={{ padding: '12px 16px' }}>
                             <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, background: '#ede3f5', color: '#5a2d82' }}>Kapalı</span>
                           </td>
