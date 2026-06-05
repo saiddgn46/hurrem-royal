@@ -319,6 +319,7 @@ export default function Admin() {
     beklemede: gercek.filter(r => r.durum === 'Beklemede' || r.durum === 'Ön Rezervasyon').length,
     onaylandi: gercek.filter(r => r.durum === 'Onaylandı').length,
     reddedildi: gercek.filter(r => r.durum === 'Reddedildi').length,
+    kapali: rezervasyonlar.filter(r => r.ad_soyad === '[KAPALI]').length,
   };
 
   // ── Giriş ekranı ──
@@ -458,6 +459,7 @@ export default function Admin() {
                 { label: 'Beklemede', value: istatistik.beklemede, renk: '#856404', bg: '#fff3cd' },
                 { label: 'Onaylandı', value: istatistik.onaylandi, renk: '#155724', bg: '#d4edda' },
                 { label: 'Reddedildi', value: istatistik.reddedildi, renk: '#721c24', bg: '#f8d7da' },
+                { label: 'Kapalı', value: istatistik.kapali, renk: '#5a2d82', bg: '#ede3f5' },
               ].map(({ label, value, renk, bg }) => (
                 <div key={label} onClick={() => setAktifFiltre(aktifFiltre === label ? 'Toplam' : label)}
                   style={{
@@ -484,6 +486,7 @@ export default function Admin() {
                 </thead>
                 <tbody>
                   {rezervasyonlar.filter(r => {
+                    if (aktifFiltre === 'Kapalı') return r.ad_soyad === '[KAPALI]';
                     if (r.ad_soyad === '[KAPALI]') return false;
                     if (aktifFiltre === 'Toplam') return true;
                     if (aktifFiltre === 'Beklemede') return r.durum === 'Beklemede' || r.durum === 'Ön Rezervasyon';
@@ -492,36 +495,53 @@ export default function Admin() {
                     return true;
                   }).map((r, i) => (
                     <tr key={r.id} style={{ borderBottom: `1px solid ${GOLD}33`, background: i % 2 === 0 ? '#fff' : '#fdf6e3' }}>
-                      <td style={{ padding: '12px 16px' }}>{r.ad_soyad}</td>
-                      <td style={{ padding: '12px 16px' }}>{r.telefon}</td>
-                      <td style={{ padding: '12px 16px' }}>{r.tarih}</td>
-                      <td style={{ padding: '12px 16px' }}>{r.paket}</td>
-                      <td style={{ padding: '12px 16px' }}>{r.not}</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{
-                          padding: '4px 12px', borderRadius: 20, fontSize: 12, whiteSpace: 'nowrap',
-                          background: r.durum === 'Onaylandı' ? '#d4edda' : r.durum === 'Reddedildi' ? '#f8d7da' : '#fff3cd',
-                          color: r.durum === 'Onaylandı' ? '#155724' : r.durum === 'Reddedildi' ? '#721c24' : '#856404',
-                        }}>
-                          {r.durum}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          <button onClick={() => durumGuncelle(r.id, 'Onaylandı')}
-                            style={{ padding: '6px 10px', background: '#28a745', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Onayla</button>
-                          <button onClick={() => durumGuncelle(r.id, 'Reddedildi')}
-                            style={{ padding: '6px 10px', background: '#dc3545', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Reddet</button>
-                          <button onClick={() => onRezervasyonYap(r.id, r.durum)}
-                            style={{ padding: '6px 10px', background: r.durum === 'Ön Rezervasyon' ? '#888' : GOLD, border: 'none', color: DARK, cursor: 'pointer', borderRadius: 4, fontSize: 11, fontWeight: 'bold' }}>
-                            {r.durum === 'Ön Rezervasyon' ? 'Geri Al' : 'Ön Rez'}
-                          </button>
-                          {r.durum === 'Reddedildi' && (
-                            <button onClick={() => rezervasyonSil(r.id)}
-                              style={{ padding: '6px 10px', background: '#dc3545', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Sil</button>
-                          )}
-                        </div>
-                      </td>
+                      {r.ad_soyad === '[KAPALI]' ? (
+                        <>
+                          <td colSpan={5} style={{ padding: '12px 16px', fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: '#5a2d82', fontStyle: 'italic' }}>
+                            Admin tarafından kapatıldı
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, background: '#ede3f5', color: '#5a2d82' }}>Kapalı</span>
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <button onClick={() => tarihAc(r.id)}
+                              style={{ padding: '6px 14px', background: '#28a745', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Aç</button>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td style={{ padding: '12px 16px' }}>{r.ad_soyad}</td>
+                          <td style={{ padding: '12px 16px' }}>{r.telefon}</td>
+                          <td style={{ padding: '12px 16px' }}>{r.tarih}</td>
+                          <td style={{ padding: '12px 16px' }}>{r.paket}</td>
+                          <td style={{ padding: '12px 16px' }}>{r.not}</td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <span style={{
+                              padding: '4px 12px', borderRadius: 20, fontSize: 12, whiteSpace: 'nowrap',
+                              background: r.durum === 'Onaylandı' ? '#d4edda' : r.durum === 'Reddedildi' ? '#f8d7da' : '#fff3cd',
+                              color: r.durum === 'Onaylandı' ? '#155724' : r.durum === 'Reddedildi' ? '#721c24' : '#856404',
+                            }}>
+                              {r.durum}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              <button onClick={() => durumGuncelle(r.id, 'Onaylandı')}
+                                style={{ padding: '6px 10px', background: '#28a745', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Onayla</button>
+                              <button onClick={() => durumGuncelle(r.id, 'Reddedildi')}
+                                style={{ padding: '6px 10px', background: '#dc3545', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Reddet</button>
+                              <button onClick={() => onRezervasyonYap(r.id, r.durum)}
+                                style={{ padding: '6px 10px', background: r.durum === 'Ön Rezervasyon' ? '#888' : GOLD, border: 'none', color: DARK, cursor: 'pointer', borderRadius: 4, fontSize: 11, fontWeight: 'bold' }}>
+                                {r.durum === 'Ön Rezervasyon' ? 'Geri Al' : 'Ön Rez'}
+                              </button>
+                              {r.durum === 'Reddedildi' && (
+                                <button onClick={() => rezervasyonSil(r.id)}
+                                  style={{ padding: '6px 10px', background: '#dc3545', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: 4, fontSize: 11 }}>Sil</button>
+                              )}
+                            </div>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                   {rezervasyonlar.length === 0 && (
