@@ -2,7 +2,7 @@ import Takvim from './Takvim';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Turnstile from 'react-turnstile';
 import { supabase } from './supabase';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import emailjs from '@emailjs/browser';
 import Admin from './Admin';
@@ -41,12 +41,22 @@ const sectionId = (link) =>
 function Navbar({ active, setActive }) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const navRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll);
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleOutside = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [menuOpen]);
 
   const handleNav = (link) => {
     setActive(link);
@@ -56,7 +66,7 @@ function Navbar({ active, setActive }) {
   };
 
   return (
-    <nav style={{
+    <nav ref={navRef} style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
       background: scrolled ? 'rgba(253,246,227,0.97)' : 'transparent',
       boxShadow: scrolled ? '0 2px 12px #0001' : 'none',
@@ -331,9 +341,60 @@ function Paketler({ onPaketSec }) {
   );
 }
 
+// ─── Galeri Lightbox ──────────────────────────────────────────────────────────
+function GaleriLightbox({ photos, index, onKapat }) {
+  const [aktif, setAktif] = useState(index);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => {
+      if (e.key === 'Escape') onKapat();
+      if (e.key === 'ArrowLeft') setAktif(i => (i - 1 + photos.length) % photos.length);
+      if (e.key === 'ArrowRight') setAktif(i => (i + 1) % photos.length);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', onKey); };
+  }, [onKapat, photos.length]);
+
+  const btnStyle = (side) => ({
+    position: 'absolute', [side]: 16, top: '50%', transform: 'translateY(-50%)',
+    background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)',
+    color: '#fff', width: 48, height: 48, borderRadius: '50%', cursor: 'pointer',
+    fontSize: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'background 0.2s',
+  });
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      onClick={onKapat}>
+      <button onClick={onKapat}
+        style={{ position: 'absolute', top: 18, right: 24, background: 'none', border: 'none', color: '#fff', fontSize: 38, cursor: 'pointer', lineHeight: 1, zIndex: 10 }}>×</button>
+      {photos.length > 1 && (
+        <button style={btnStyle('left')}
+          onClick={e => { e.stopPropagation(); setAktif(i => (i - 1 + photos.length) % photos.length); }}>‹</button>
+      )}
+      <motion.img
+        key={aktif}
+        initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }}
+        src={photos[aktif]} alt={`galeri-${aktif + 1}`}
+        onClick={e => e.stopPropagation()}
+        style={{ maxWidth: '90vw', maxHeight: '88vh', objectFit: 'contain', display: 'block', boxShadow: '0 8px 48px rgba(0,0,0,0.6)' }} />
+      {photos.length > 1 && (
+        <button style={btnStyle('right')}
+          onClick={e => { e.stopPropagation(); setAktif(i => (i + 1) % photos.length); }}>›</button>
+      )}
+      <div style={{ position: 'absolute', bottom: 20, color: 'rgba(255,255,255,0.5)', fontFamily: "'Cinzel', serif", fontSize: 11, letterSpacing: 3 }}>
+        {aktif + 1} / {photos.length}
+      </div>
+    </motion.div>
+  );
+}
+
 // ─── Galeri ───────────────────────────────────────────────────────────────────
 function Galeri() {
   const [photos, setPhotos] = useState([]);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   useEffect(() => {
     supabase.from('galeri').select('*').order('created_at', { ascending: true }).then(({ data }) => {
@@ -348,7 +409,10 @@ function Galeri() {
       <div style={{ width: 60, height: 1, background: GOLD, margin: '0 auto 56px' }} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16, maxWidth: 1100, margin: '0 auto' }}>
         {photos.map((url, i) => (
-          <motion.div key={i} initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.07 }} style={{ overflow: 'hidden', aspectRatio: '4/3' }}>
+          <motion.div key={i}
+            initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.07 }}
+            style={{ overflow: 'hidden', aspectRatio: '4/3', cursor: 'zoom-in' }}
+            onClick={() => setLightboxIndex(i)}>
             <img src={url} alt={`galeri-${i + 1}`}
               style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }}
               onMouseEnter={e => e.target.style.transform = 'scale(1.05)'}
@@ -356,6 +420,11 @@ function Galeri() {
           </motion.div>
         ))}
       </div>
+      <AnimatePresence>
+        {lightboxIndex !== null && (
+          <GaleriLightbox photos={photos} index={lightboxIndex} onKapat={() => setLightboxIndex(null)} />
+        )}
+      </AnimatePresence>
     </section>
   );
 }
