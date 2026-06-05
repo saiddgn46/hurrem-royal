@@ -39,7 +39,7 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
   };
 
   const handleTarih = (date) => {
-    if (tarihDurumu(date) === 'dolu') return;
+    if (!cokluSecim && tarihDurumu(date) === 'dolu') return;
     const dateStr = toLocalDateStr(date);
     if (!cokluSecim) setSeciliTarih(date);
     if (onTarihSec) onTarihSec(dateStr);
@@ -153,7 +153,7 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
 
         tileDisabled={({ date, view }) => {
           const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
-          if (view === 'month') return tarihDurumu(date) === 'dolu' || date < bugun;
+          if (view === 'month') return cokluSecim ? date < bugun : (tarihDurumu(date) === 'dolu' || date < bugun);
           const buAyin1i = new Date(bugun.getFullYear(), bugun.getMonth(), 1);
           return date < buAyin1i;
         }}
