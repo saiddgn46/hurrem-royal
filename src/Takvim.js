@@ -29,6 +29,7 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
     const rez = rezervasyonlar.find(r => r.tarih === tarihStr);
     if (!rez) return 'bos';
     if (rez.ad_soyad === '[KAPALI]') return 'kapali';
+    if (rez.durum === 'Reddedildi') return 'bos';
     if (rez.durum === 'Onaylandı') return 'dolu';
     if (rez.on_rezervasyon === true) return 'on_rezervasyon';
     return 'bos';
