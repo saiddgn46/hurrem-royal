@@ -17,7 +17,7 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
   const fetchRezervasyonlar = async () => {
     const { data } = await supabase
       .from('rezervasyonlar')
-      .select('tarih, durum, on_rezervasyon');
+      .select('tarih, durum, on_rezervasyon, ad_soyad');
       console.log('Takvim data:', data);
     if (data) setRezervasyonlar(data);
   };
@@ -28,6 +28,7 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
     const tarihStr = localDate.toISOString().split('T')[0];
     const rez = rezervasyonlar.find(r => r.tarih === tarihStr);
     if (!rez) return 'bos';
+    if (rez.ad_soyad === '[KAPALI]') return 'kapali';
     if (rez.durum === 'Onaylandı') return 'dolu';
     if (rez.on_rezervasyon === true) return 'on_rezervasyon';
     return 'bos';
@@ -39,7 +40,9 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
   };
 
   const handleTarih = (date) => {
-    if (!cokluSecim && tarihDurumu(date) === 'dolu') return;
+    const durum = tarihDurumu(date);
+    if (durum === 'dolu') return;
+    if (!cokluSecim && durum === 'kapali') return;
     const dateStr = toLocalDateStr(date);
     if (!cokluSecim) setSeciliTarih(date);
     if (onTarihSec) onTarihSec(dateStr);
@@ -107,6 +110,11 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
           color: #333 !important;
           cursor: not-allowed !important;
         }
+        .kapali {
+          background: #c9c9c9 !important;
+          color: #555 !important;
+          cursor: not-allowed !important;
+        }
         .on-rezervasyon {
           background: #e6c97a !important;
           color: ${DARK} !important;
@@ -141,11 +149,12 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
         value={seciliTarih}
         tileClassName={({ date, view }) => {
           if (view !== 'month') return null;
-          const durum = tarihDurumu(date);
-          if (durum === 'dolu') return 'dolu';
-          if (durum === 'on_rezervasyon') return 'on-rezervasyon';
           const tarihStr = toLocalDateStr(date);
           if (secilenTarihler.includes(tarihStr)) return 'secili';
+          const durum = tarihDurumu(date);
+          if (durum === 'dolu') return 'dolu';
+          if (durum === 'kapali') return 'kapali';
+          if (durum === 'on_rezervasyon') return 'on-rezervasyon';
           const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
           if (date >= bugun) return 'bos';
           return null;
@@ -153,7 +162,12 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
 
         tileDisabled={({ date, view }) => {
           const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
-          if (view === 'month') return cokluSecim ? date < bugun : (tarihDurumu(date) === 'dolu' || date < bugun);
+          if (view === 'month') {
+            if (date < bugun) return true;
+            const durum = tarihDurumu(date);
+            if (cokluSecim) return durum === 'dolu';
+            return durum === 'dolu' || durum === 'kapali';
+          }
           const buAyin1i = new Date(bugun.getFullYear(), bugun.getMonth(), 1);
           return date < buAyin1i;
         }}
@@ -169,7 +183,7 @@ export default function Takvim({ onTarihSec, cokluSecim = false, secilenTarihler
         marginTop: 14,
         padding: '0 8px',
       }}>
-        {[['#ccffcc', 'Müsait'], ['#fff3cc', 'Ön Rezervasyon'], ['#ffcccc', 'Dolu']].map(([color, label]) => (
+        {[['#ccffcc', 'Müsait'], ['#e6c97a', 'Ön Rezervasyon'], ['#ffcccc', 'Dolu'], ['#c9c9c9', 'Kapalı']].map(([color, label]) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{
               width: 14,
